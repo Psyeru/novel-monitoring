@@ -2,54 +2,54 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>노벨피아 스마트 모니터 v3.8</title>
+    <title>노벨피아 스마트 모니터 v3.9</title>
     <style>
         :root { --primary: #5a2df2; --bg: #f3f4f6; --surface: #ffffff; }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 40px 20px; color: #1f2937; }
         .container { max-width: 850px; margin: 0 auto; }
 
         /* 컨트롤 박스 디자인 */
-        .control-box { background: var(--surface); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .control-box { background: var(--surface); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 25px; position: relative; }
         
-        /* [핵심] 체크박스와 글자 정렬 교정 */
-        .auto-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 15px; }
-        .auto-row input { width: 20px; height: 20px; cursor: pointer; margin: 0; accent-color: var(--primary); }
+        /* [중요] 체크박스와 글자 정렬 강제 고정 */
+        .auto-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 15px; width: 100%; }
+        .auto-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; margin: 0; accent-color: var(--primary); }
         .auto-row span { font-size: 14px; font-weight: 800; color: var(--primary); cursor: pointer; }
 
-        .input-main { width: 100%; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; font-size: 15px; }
+        .input-main { width: 100%; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; font-size: 14px; }
         .input-group { display: flex; gap: 12px; margin-bottom: 20px; }
-        .input-sub { flex: 1; padding: 14px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 15px; }
+        .input-sub { flex: 1; padding: 14px; border: 1px solid #e5e7eb; border-radius: 12px; font-size: 14px; box-sizing: border-box; }
         .input-sub:disabled { background: #f9fafb; color: #9ca3af; }
 
         button { width: 100%; padding: 18px; background: var(--primary); color: white; border: none; border-radius: 14px; font-size: 16px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 15px rgba(90, 45, 242, 0.2); transition: 0.2s; }
         button:hover { background: #4823c4; transform: translateY(-1px); }
         
-        /* 결과 카드 디자인 */
-        details { background: white; margin-bottom: 15px; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; }
+        /* 결과 카드 */
+        details { background: white; margin-bottom: 12px; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; }
         summary { padding: 18px 25px; cursor: pointer; font-weight: 800; display: flex; justify-content: space-between; align-items: center; outline: none; }
         .item { padding: 14px 25px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; font-size: 14px; }
         .item-no { width: 90px; color: #9ca3af; font-family: monospace; }
         .item-link { flex: 1; text-decoration: none; color: #374151; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .item-reason { font-size: 12px; background: #f3f4f6; padding: 4px 10px; border-radius: 8px; color: #6b7280; }
+        .item-reason { font-size: 11px; background: #f3f4f6; padding: 4px 10px; border-radius: 8px; color: #6b7280; }
 
-        #debug-console { background: #111827; color: #10b981; font-family: monospace; padding: 20px; border-radius: 16px; height: 120px; overflow-y: auto; margin-top: 25px; font-size: 12px; }
+        #debug-console { background: #111827; color: #10b981; font-family: monospace; padding: 15px; border-radius: 16px; height: 120px; overflow-y: auto; margin-top: 25px; font-size: 12px; border: 1px solid #374151; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 style="text-align:center; margin-bottom: 30px;">⚡ 노벨피아 스마트 모니터</h1>
+    <h1 style="text-align:center; font-size: 26px; margin-bottom: 30px;">⚡ 노벨피아 스마트 모니터</h1>
 
     <div class="control-box">
         <input type="password" id="apiKey" class="input-main" placeholder="Gemini API Key를 입력하세요">
         
-        <div class="auto-row" onclick="const cb = document.getElementById('autoLatest'); cb.checked = !cb.checked; toggleInput(cb);">
-            <span>🔄 실시간 최신글 자동 감지</span>
-            <input type="checkbox" id="autoLatest" checked onchange="toggleInput(this)" onclick="event.stopPropagation()">
+        <div class="auto-row">
+            <span onclick="const cb = document.getElementById('autoLatest'); cb.checked = !cb.checked; toggleInput(cb);">🔄 실시간 최신글 자동 감지</span>
+            <input type="checkbox" id="autoLatest" checked onchange="toggleInput(this)">
         </div>
 
         <div class="input-group">
-            <input type="number" id="startNo" class="input-sub" placeholder="시작 번호 (수동)" disabled>
+            <input type="number" id="startNo" class="input-sub" placeholder="시작 번호" disabled>
             <input type="number" id="count" class="input-sub" value="20" placeholder="분석 수량" style="flex:0.5;">
         </div>
         
@@ -78,6 +78,7 @@
         document.getElementById('startNo').disabled = cb.checked;
     }
 
+    // [중요] 공지사항을 무조건 건너뛰는 진짜 최신글 감지 로직
     async function getLatestNo() {
         log("최신 게시글 탐색 중...");
         try {
@@ -85,14 +86,26 @@
             const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
             const html = await resp.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
+            
+            // 1. 목록에서 모든 게시글 줄을 가져옴
             const rows = Array.from(doc.querySelectorAll('tr.ub-content.us-post'));
+            
             for (let row of rows) {
                 const numCell = row.querySelector('.gall_num');
-                if (!numCell || numCell.innerText.includes('공지')) continue;
+                const subjectCell = row.querySelector('.gall_subject');
+                
+                // 2. 번호 칸이나 말머리에 '공지'가 있으면 패스
+                if (!numCell || numCell.innerText.includes('공지') || (subjectCell && subjectCell.innerText.includes('공지'))) continue;
+                
                 const no = parseInt(numCell.innerText.trim());
-                if(!isNaN(no) && no > 11000000) return no;
+                
+                // 3. 현재 대역대(1100만 이상) 확인
+                if(!isNaN(no) && no > 11000000) {
+                    log(`진짜 최신글 확인됨: ${no}`);
+                    return no;
+                }
             }
-        } catch(e) { return null; }
+        } catch(e) { log("번호 추출 중 오류 발생"); return null; }
     }
 
     async function startMonitor() {
@@ -107,8 +120,7 @@
 
         if(autoMode) {
             startNo = await getLatestNo();
-            if(!startNo) { btn.disabled = false; return alert("최신글을 못 찾았습니다."); }
-            log(`최신글 확인: ${startNo}`);
+            if(!startNo) { btn.disabled = false; return; }
         }
 
         let counts = { issue: 0, novel: 0, chat: 0 };
@@ -118,7 +130,7 @@
             for (let i = 0; i < totalCount; i += BATCH_SIZE) {
                 const currentBatchSize = Math.min(BATCH_SIZE, totalCount - i);
                 const batchIds = Array.from({length: currentBatchSize}, (_, idx) => (startNo - i) - idx);
-                log(`${batchIds[0]}번대 분석 중...`);
+                log(`${batchIds[0]}번대 분석 수집 중...`);
 
                 const fetchPromises = batchIds.map(async (no) => {
                     try {
@@ -128,6 +140,7 @@
                         const doc = new DOMParser().parseFromString(html, 'text/html');
                         const title = doc.querySelector('.title_subject')?.innerText.trim();
                         const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 100) || "";
+                        // 삭제된 글이거나 내용이 없으면 무시
                         if(title && !html.includes("삭제된 게시글")) return { no: String(no), title, body };
                     } catch(e) { return null; }
                 });
@@ -135,8 +148,9 @@
                 const posts = (await Promise.all(fetchPromises)).filter(p => p && p.no);
 
                 if (posts.length > 0) {
-                    const prompt = `분류: 1. 'issue'(노피아 불만), 2. 'novel'(리뷰), 3. 'chat'(잡담). 
-                    JSON 출력: {"results": {"ID": {"c": "issue/novel/chat", "r": "이유"}}}
+                    const prompt = `역할: 노벨피아 모니터링 직원. 
+                    분류: 1.'issue'(노피아 시스템/운영 불만), 2.'novel'(소설 리뷰), 3.'chat'(잡담).
+                    출력: JSON {"results": {"ID": {"c": "issue/novel/chat", "r": "이유"}}}
                     데이터: ${posts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body}`).join('\n')}`;
 
                     const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
@@ -149,7 +163,7 @@
                     if(rawText) {
                         const resData = JSON.parse(rawText);
                         posts.forEach(p => {
-                            const res = resData.results?.[p.no] || { c: 'chat', r: '-' };
+                            const res = (resData.results && resData.results[p.no]) || { c: 'chat', r: '-' };
                             counts[res.c]++;
                             const div = document.createElement('div');
                             div.className = 'item';
@@ -162,8 +176,8 @@
                 document.getElementById('cnt-novel').innerText = counts.novel;
                 document.getElementById('cnt-chat').innerText = counts.chat;
             }
-            log("✅ 완료");
-        } catch(e) { log(`에러: ${e.message}`); } finally { btn.disabled = false; }
+            log("✅ 분석 완료");
+        } catch(e) { log(`에러 발생: ${e.message}`); } finally { btn.disabled = false; }
     }
 </script>
 </body>
