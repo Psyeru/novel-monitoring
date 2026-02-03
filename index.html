@@ -73,175 +73,129 @@
 </div>
 
 <script>
-    const PROXY_URL = "https://my-cors-proxy.syeru1209.workers.dev/?url=";
+const PROXY_URL = "https://my-cors-proxy.syeru1209.workers.dev/?url=";
 
-    function log(msg) {
-        const consoleBox = document.getElementById('debug-console');
-        consoleBox.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
-        consoleBox.scrollTop = consoleBox.scrollHeight;
-    }
+function log(msg) {
+    const consoleBox = document.getElementById('debug-console');
+    consoleBox.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    consoleBox.scrollTop = consoleBox.scrollHeight;
+}
 
-    // 체크박스 상태에 따라 입력창 끄고 켜기
-    function toggleInput() {
-        document.getElementById('startNo').disabled = document.getElementById('autoLatest').checked;
-    }
+function toggleInput() {
+    document.getElementById('startNo').disabled = document.getElementById('autoLatest').checked;
+}
 
+// 1. 최신 번호 추출 로직 (보강됨)
 async function getLatestNo() {
-        log("🔍 장갤 목록에서 진짜 최신글 찾는 중...");
-        try {
-            const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
-            const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
-            const html = await resp.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            
-            // 1. 게시글 목록 행들만 정확히 타겟팅
-            const rows = Array.from(doc.querySelectorAll('tr.ub-content.us-post'));
-            
-            let validNumbers = [];
-
-            for(let row of rows) {
-                const numCell = row.querySelector('.gall_num');
-                if (!numCell) continue;
-
-                // '공지' 글자가 포함되어 있으면 무조건 패스
-                if (numCell.innerText.includes('공지')) continue;
-
-                const no = parseInt(numCell.innerText.trim());
-                
-                // 2. 현재 장갤 번호 대역(1100만 이상)만 유효한 것으로 인정
-                if(!isNaN(no) && no > 11000000 && no < 20000000) { 
-                    validNumbers.push(no);
-                }
-            }
-
-            if (validNumbers.length > 0) {
-                // 수집된 번호 중 가장 큰 값(진짜 최신 일반글) 반환
-                const latest = Math.max(...validNumbers);
-                log(`✅ 진짜 최신글 번호 확인: ${latest}`);
-                return latest; 
-            }
-            
-            throw new Error("일반 게시글 번호를 찾지 못했습니다.");
-        } catch(e) { 
-            log("❌ 추출 실패: " + e.message); 
-            return null; 
+    log("🔍 장갤 목록 분석 중...");
+    try {
+        const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
+        const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
+        const html = await resp.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const rows = Array.from(doc.querySelectorAll('tr.ub-content.us-post'));
+        
+        for(let row of rows) {
+            const numCell = row.querySelector('.gall_num');
+            if (!numCell || numCell.innerText.includes('공지')) continue;
+            const no = parseInt(numCell.innerText.trim());
+            if(!isNaN(no) && no > 11000000) return no;
         }
-    }
+    } catch(e) { log("❌ 번호 추출 실패"); return null; }
+}
+
+// 2. 메인 분석 함수 (에러 방지 강화)
 async function startMonitor() {
-        const key = document.getElementById('apiKey').value.trim();
-        const autoMode = document.getElementById('autoLatest').checked;
-        let startNo = parseInt(document.getElementById('startNo').value);
-        const totalCount = parseInt(document.getElementById('count').value);
-        
-        const ui = {
-            btn: document.getElementById('btnRun'),
-            progBar: document.getElementById('progBar'),
-            progText: document.getElementById('progText'),
-            lists: { issue: document.getElementById('list-issue'), novel: document.getElementById('list-novel'), chat: document.getElementById('list-chat') },
-            cnts: { issue: document.getElementById('cnt-issue'), novel: document.getElementById('cnt-novel'), chat: document.getElementById('cnt-chat') }
-        };
+    const key = document.getElementById('apiKey').value.trim();
+    const autoMode = document.getElementById('autoLatest').checked;
+    let startNo = parseInt(document.getElementById('startNo').value);
+    const totalCount = parseInt(document.getElementById('count').value);
+    
+    const ui = {
+        btn: document.getElementById('btnRun'),
+        progBar: document.getElementById('progBar'),
+        progText: document.getElementById('progText'),
+        lists: { issue: document.getElementById('list-issue'), novel: document.getElementById('list-novel'), chat: document.getElementById('list-chat') },
+        cnts: { issue: document.getElementById('cnt-issue'), novel: document.getElementById('cnt-novel'), chat: document.getElementById('cnt-chat') }
+    };
 
-        if(!key) return alert("API 키를 입력하세요.");
-        
-        ui.btn.disabled = true;
-        document.getElementById('debug-console').innerHTML = "🚀 분석 프로세스 가동...";
-
-        // 1. 최신글 번호 자동 감지 (체크박스 켜져 있을 때)
-        if(autoMode) {
-            startNo = await getLatestNo();
-            if(!startNo) {
-                alert("최신 번호를 가져오지 못했습니다. 수동으로 입력해주세요.");
-                ui.btn.disabled = false;
-                return;
-            }
-        }
-
-        let counts = { issue: 0, novel: 0, chat: 0 };
-        const BATCH_SIZE = 10;
-        let processed = 0;
-
-        try {
-            for (let i = 0; i < totalCount; i += BATCH_SIZE) {
-                const currentBatchSize = Math.min(BATCH_SIZE, totalCount - i);
-                const batchIds = Array.from({length: currentBatchSize}, (_, idx) => (startNo - i) - idx);
-                
-                log(`⚡ [${batchIds[0]}~] 데이터 수집 중...`);
-
-                const fetchPromises = batchIds.map(async (no) => {
-                    try {
-                        const targetUrl = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${no}`;
-                        const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
-                        const html = await resp.text();
-                        const doc = new DOMParser().parseFromString(html, 'text/html');
-                        const title = doc.querySelector('.title_subject')?.innerText.trim();
-                        const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 150) || "";
-                        if(title) return { no, title, body };
-                    } catch(e) { return null; }
-                });
-
-                const rawPosts = await Promise.all(fetchPromises);
-                const posts = rawPosts.filter(p => p !== null);
-
-                if (posts.length > 0) {
-                    // [중요] 페르소나 적용 및 엄격한 JSON 출력 요구
-                    const prompt = `너는 노벨피아 모니터링 직원이야. 장르소설 갤러리 글을 분류해.
-                    1. 'issue': 노벨피아 시스템 불만(주어 없어도 뷰어/결제면 노피아임). 
-                    2. 'novel': 소설 리뷰/추천. 
-                    3. 'chat': 잡담.
-                    출력은 반드시 JSON만: {"results": {"글번호": {"c": "분류", "r": "한글이유"}}}
-                    데이터: ${posts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body}`).join('\n')}`;
-
-                    try {
-                        const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                        });
-                        const aiData = await aiResp.json();
-                        
-                        // AI 응답 텍스트 정제
-                        let rawText = aiData.candidates[0].content.parts[0].text;
-                        const resData = JSON.parse(rawText.replace(/```json|```/g, "").trim());
-
-                        posts.forEach(p => {
-                            // 🔥 [핵심 수정] undefined 에러 방지용 안전 장치
-                            // AI가 보낸 결과(resData.results)에 해당 글번호(p.no)가 없어도 에러 안 나게 함
-                            const resultEntry = resData.results ? (resData.results[p.no] || resData.results[String(p.no)]) : null;
-                            const info = resultEntry || { c: 'chat', r: '분석 누락됨' };
-                            
-                            let cat = info.c;
-                            if(!['issue', 'novel', 'chat'].includes(cat)) cat = 'chat';
-
-                            counts[cat]++;
-                            const div = document.createElement('div');
-                            div.className = 'item';
-                            div.innerHTML = `
-                                <span class="item-no">${p.no}</span>
-                                <a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a>
-                                <span class="item-reason">${info.r}</span>
-                            `;
-                            ui.lists[cat].appendChild(div);
-                        });
-
-                        ui.cnts.issue.innerText = counts.issue;
-                        ui.cnts.novel.innerText = counts.novel;
-                        ui.cnts.chat.innerText = counts.chat;
-
-                    } catch(err) { 
-                        log(`⚠️ 이번 묶음 분석 실패: ${err.message}`);
-                    }
-                }
-                processed += currentBatchSize;
-                ui.progBar.style.width = `${(processed/totalCount)*100}%`;
-                ui.progText.innerText = `${Math.round((processed/totalCount)*100)}%`;
-            }
-            log("✅ 분석 완료");
-        } catch(e) { 
-            log(`❌ 치명적 에러: ${e.message}`); 
-        } finally { 
-            ui.btn.disabled = false; 
-        }
+    if(!key) return alert("API 키를 입력하세요.");
+    ui.btn.disabled = true;
+    
+    if(autoMode) {
+        startNo = await getLatestNo();
+        if(!startNo) { ui.btn.disabled = false; return alert("최신글을 못 찾았습니다."); }
     }
+
+    let counts = { issue: 0, novel: 0, chat: 0 };
+    const BATCH_SIZE = 10;
+    let processed = 0;
+
+    try {
+        for (let i = 0; i < totalCount; i += BATCH_SIZE) {
+            const currentBatchSize = Math.min(BATCH_SIZE, totalCount - i);
+            const batchIds = Array.from({length: currentBatchSize}, (_, idx) => (startNo - i) - idx);
+            
+            log(`⚡ [${batchIds[0]}~] 수집 중...`);
+
+            const fetchPromises = batchIds.map(async (no) => {
+                try {
+                    const targetUrl = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${no}`;
+                    const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
+                    const html = await resp.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const title = doc.querySelector('.title_subject')?.innerText.trim();
+                    const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 100) || "";
+                    if(title) return { no: String(no), title, body }; // 번호를 문자열로 고정
+                } catch(e) { return null; }
+            });
+
+            const posts = (await Promise.all(fetchPromises)).filter(p => p !== null && p.no);
+
+            if (posts.length > 0) {
+                const prompt = `Role: Novelpia Monitor. Classify DC Inside posts. 
+                1. 'issue': System bugs/billing/viewer complaints. 2. 'novel': Reviews/Recs. 3. 'chat': Others.
+                Output JSON Only: {"results": {"ID": {"c": "issue/novel/chat", "r": "Reason"}}}
+                Data: ${posts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body}`).join('\n')}`;
+
+                try {
+                    const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                    });
+                    const aiData = await aiResp.json();
+                    
+                    if(!aiData.candidates) throw new Error("AI 응답 없음");
+                    
+                    const rawText = aiData.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
+                    const resData = JSON.parse(rawText);
+
+                    posts.forEach(p => {
+                        // 여기서 p.no가 확실히 있는지 체크
+                        if(!p || !p.no) return; 
+
+                        const result = (resData.results && (resData.results[p.no] || resData.results[String(p.no)])) || { c: 'chat', r: '-' };
+                        const cat = ['issue', 'novel', 'chat'].includes(result.c) ? result.c : 'chat';
+
+                        counts[cat]++;
+                        const div = document.createElement('div');
+                        div.className = 'item';
+                        div.innerHTML = `<span class="item-no">${p.no}</span><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a><span class="item-reason">${result.r}</span>`;
+                        ui.lists[cat].appendChild(div);
+                    });
+
+                    ui.cnts.issue.innerText = counts.issue;
+                    ui.cnts.novel.innerText = counts.novel;
+                    ui.cnts.chat.innerText = counts.chat;
+                } catch(err) { log(`⚠️ 분석 스킵: ${err.message}`); }
+            }
+            processed += currentBatchSize;
+            ui.progBar.style.width = `${(processed/totalCount)*100}%`;
+            ui.progText.innerText = `${Math.round((processed/totalCount)*100)}%`;
+        }
+        log("✅ 모든 작업 완료");
+    } catch(e) { log(`❌ 치명적 에러: ${e.message}`); } finally { ui.btn.disabled = false; }
+}
 </script>
 </body>
 </html>
