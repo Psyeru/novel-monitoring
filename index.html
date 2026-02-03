@@ -87,43 +87,43 @@
     }
 
 async function getLatestNo() {
-        log("🔍 장갤 목록 분석 중... (공지사항 제외)");
+        log("🔍 장갤 목록에서 진짜 최신글 찾는 중...");
         try {
             const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
             const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
             const html = await resp.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
             
-            // 모든 게시글 행을 가져옴
-            const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
+            // 1. 게시글 목록 행들만 정확히 타겟팅
+            const rows = Array.from(doc.querySelectorAll('tr.ub-content.us-post'));
             
             let validNumbers = [];
 
             for(let row of rows) {
-                const gallNumCell = row.querySelector('.gall_num');
-                if (!gallNumCell) continue;
+                const numCell = row.querySelector('.gall_num');
+                if (!numCell) continue;
 
-                const noText = gallNumCell.innerText.trim();
-                const no = parseInt(noText);
+                // '공지' 글자가 포함되어 있으면 무조건 패스
+                if (numCell.innerText.includes('공지')) continue;
 
-                // 1. '공지'라고 적힌 행은 무조건 패스
-                // 2. 숫자가 아니면 패스
-                // 3. 보통 공지글은 번호가 아주 작거나 특정 대역에 고정됨
-                if(!isNaN(no) && !noText.includes('공지') && no > 1000000) { 
+                const no = parseInt(numCell.innerText.trim());
+                
+                // 2. 현재 장갤 번호 대역(1100만 이상)만 유효한 것으로 인정
+                if(!isNaN(no) && no > 11000000 && no < 20000000) { 
                     validNumbers.push(no);
                 }
             }
 
             if (validNumbers.length > 0) {
-                // 수집된 번호 중 가장 큰 값(최신글) 반환
+                // 수집된 번호 중 가장 큰 값(진짜 최신 일반글) 반환
                 const latest = Math.max(...validNumbers);
-                log(`✅ 공지 제외 완료. 최신 일반글: ${latest}`);
+                log(`✅ 진짜 최신글 번호 확인: ${latest}`);
                 return latest; 
             }
             
-            throw new Error("일반 게시글을 찾지 못함");
+            throw new Error("일반 게시글 번호를 찾지 못했습니다.");
         } catch(e) { 
-            log("❌ 번호 추출 실패: " + e.message); 
+            log("❌ 추출 실패: " + e.message); 
             return null; 
         }
     }
