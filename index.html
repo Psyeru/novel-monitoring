@@ -3,31 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>장르소설 갤러리 모니터링</title>
+    <title>장르소설 갤러리 모니터링 v3</title>
     <style>
-        body { font-family: 'Pretendard', sans-serif; padding: 20px; background: #f5f6fa; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #5a2df2; color: white; border: none; font-weight: bold; cursor: pointer; }
-        button:disabled { background: #ccc; }
-        #log { margin-top: 20px; font-size: 13px; max-height: 200px; overflow-y: auto; border-top: 1px solid #eee; padding-top: 10px; }
-        .result-card { border: 1px solid #eee; padding: 10px; margin: 5px 0; border-radius: 6px; display: flex; justify-content: space-between; }
-        .tag-site { color: #d32f2f; font-weight: bold; }
-        .tag-novel { color: #5a2df2; }
+        /* 기존 스타일 유지 또는 강화 */
+        body { font-family: 'Pretendard', sans-serif; padding: 20px; background: #f8f9fa; color: #333; }
+        .container { max-width: 650px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+        h2 { display: flex; align-items: center; gap: 12px; color: #1a1a1a; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #666; }
+        input, button { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #e0e0e0; box-sizing: border-box; font-size: 15px; }
+        input:focus { border-color: #5a2df2; outline: none; background: #fdfdff; }
+        button { background: #5a2df2; color: white; border: none; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
+        button:hover { background: #451ec2; transform: translateY(-1px); }
+        button:disabled { background: #cbd5e0; transform: none; }
+        #status { font-weight: 700; color: #5a2df2; margin: 20px 0; text-align: center; font-size: 14px; }
+        #log { font-size: 12px; color: #718096; background: #f1f5f9; padding: 12px; border-radius: 10px; max-height: 150px; overflow-y: auto; margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        .result-card { border-bottom: 1px solid #f1f5f9; padding: 15px 5px; display: flex; justify-content: space-between; align-items: center; }
+        .tag { font-size: 11px; padding: 5px 10px; border-radius: 6px; font-weight: 800; }
+        .tag-site { background: #fff1f0; color: #e53e3e; border: 1px solid #feb2b2; }
+        .tag-novel { background: #ebf8ff; color: #3182ce; border: 1px solid #90cdf4; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🚀 갤러리 모니터링 시스템</h2>
-    <input type="text" id="apiKey" placeholder="Gemini API Key 입력">
-    <input type="number" id="lastNo" placeholder="시작 게시물 번호 (예: 11744037)">
-    <input type="number" id="count" placeholder="검사할 개수 (예: 20)" value="10">
-    <button id="startBtn" onclick="run()">분석 시작</button>
+    <h2>🚀 노벨 딥 모니터 v3</h2>
+    
+    <div class="input-group">
+        <label>Gemini API Key</label>
+        <input type="password" id="apiKey" placeholder="AI Studio에서 발급받은 키 입력">
+    </div>
+    <div class="input-group">
+        <label>시작 번호 (마지막 글 번호)</label>
+        <input type="number" id="lastNo" placeholder="예: 11744052">
+    </div>
+    <div class="input-group">
+        <label>검사 수량 (페이지당 약 10-20개 권장)</label>
+        <input type="number" id="count" value="10">
+    </div>
+    
+    <button id="startBtn" onclick="run()">지능형 분석 시작</button>
 
     <div id="status">대기 중...</div>
     <div id="log"></div>
-    <div id="results"></div>
+    <div id="results"><h3>📊 분석 대기 중</h3></div>
 </div>
 
 <script>
@@ -40,93 +59,91 @@
         const logDiv = document.getElementById('log');
         const resDiv = document.getElementById('results');
         const btn = document.getElementById('startBtn');
+        const statusDiv = document.getElementById('status');
 
-        if(!key || !lastNo) return alert("API 키와 시작 번호를 입력하세요!");
+        if(!key || !lastNo) return alert("설정값을 확인해주세요!");
 
         btn.disabled = true;
-        logDiv.innerHTML = "";
-        resDiv.innerHTML = "<h3>📊 분석 결과</h3>";
-
+        logDiv.innerHTML = "<b>[System]</b> 프로세스 시작...<br>";
+        resDiv.innerHTML = "<h3>📊 실시간 분석 결과</h3>";
         let posts = [];
-        
-        // 1. 데이터 수집 단계
-        for(let i = 0; i < count; i++) {
-            const currentNo = lastNo - i;
-            document.getElementById('status').innerText = `데이터 수집 중... (${i+1}/${count})`;
-            
-            try {
-                const target = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${currentNo}`;
-                const res = await fetch(PROXY_URL + encodeURIComponent(target));
-                const html = await res.text();
-                
-                if (html.includes("해당 게시글은 존재하지 않습니다") || html.includes("삭제된 게시글")) {
-                    logDiv.innerHTML += `<div>⚠️ ${currentNo}번: 삭제된 글 건너뜀</div>`;
-                    continue;
-                }
 
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                const title = doc.querySelector('.title_subject')?.innerText;
-                
-                if(title) {
-                    posts.push({ id: currentNo, title });
-                }
-            } catch(e) { 
-                logDiv.innerHTML += `<div>❌ ${currentNo}번: 데이터 수집 실패</div>`;
+        try {
+            // 1. 병렬 데이터 수집 (속도 향상)
+            statusDiv.innerText = "📦 게시글 수집 중...";
+            for(let i = 0; i < count; i++) {
+                const currentNo = lastNo - i;
+                try {
+                    const target = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${currentNo}`;
+                    const res = await fetch(PROXY_URL + encodeURIComponent(target));
+                    const html = await res.text();
+                    
+                    if (html.includes("존재하지 않습니다") || html.includes("삭제된 게시글")) continue;
+
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const title = doc.querySelector('.title_subject')?.innerText;
+                    
+                    if(title) {
+                        posts.push({ id: currentNo, title });
+                        logDiv.innerHTML += `<div>✅ ${currentNo} 수집 완료</div>`;
+                        logDiv.scrollTop = logDiv.scrollHeight;
+                    }
+                } catch(e) { /* 개별 실패 무시 */ }
             }
-        }
 
-        // 2. AI 분석 단계 (최신 모델 적용 + 안정적인 파싱)
-        document.getElementById('status').innerText = "AI 분석 중...";
-        for (let i = 0; i < posts.length; i += 10) {
-            const batch = posts.slice(i, i + 10);
+            // 2. Gemini 2.0/2.5 Flash 분석
+            if(posts.length === 0) throw new Error("수집된 게시글이 없습니다.");
+
+            statusDiv.innerText = "🧠 Gemini Flash 지능 분석 중...";
             
-            // 모델명을 'gemini-1.5-flash'로 변경 (더 빠르고 정확함)
-            const model = "gemini-1.5-flash"; 
-            const prompt = `Return a JSON object only. Categorize these titles as 'site' (platform issues/news) or 'novel' (content/recs).
-            Example format: {"123": "site", "456": "novel"}
-            Titles:
-            ${batch.map(p => `${p.id}: ${p.title}`).join('\n')}`;
+            // 모델명 업데이트: 최신 Flash 모델 사용
+            const MODEL_NAME = "gemini-2.0-flash"; 
+            
+            const prompt = `당신은 웹소설 커뮤니티 관리자입니다. 
+            다음 리스트를 분석하여 'site'(플랫폼 기능 오류, 결제 문제, 뷰어 버그)와 'novel'(소설 추천, 감상, 작가 소식)로 분류하세요.
+            응답은 반드시 순수 JSON 객체 하나만 출력하세요. 
+            형식: {"ID": "site" 또는 "novel"}
+            내용:
+            ${posts.map(p => `${p.id}: ${p.title}`).join('\n')}`;
 
-            try {
-                const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
+            const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        response_mime_type: "application/json" // JSON 모드 강제
+                    }
+                })
+            });
 
-                const data = await aiRes.json();
-                
-                // 에러 핸들링 추가
-                if (data.error) {
-                    throw new Error(data.error.message);
-                }
+            const data = await aiRes.json();
+            if(data.error) throw new Error(data.error.message);
 
-                let aiText = data.candidates[0].content.parts[0].text;
-                // JSON만 남기기 위해 정규식으로 정제
-                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-                if (!jsonMatch) throw new Error("JSON 형식을 찾을 수 없음");
-                
-                const resultJson = JSON.parse(jsonMatch[0]);
+            const aiRawContent = data.candidates[0].content.parts[0].text;
+            const resultJson = JSON.parse(aiRawContent);
 
-                batch.forEach(p => {
-                    const type = resultJson[p.id] || "novel"; // 기본값 novel
-                    const card = document.createElement('div');
-                    card.className = 'result-card';
-                    card.innerHTML = `
-                        <span>[${p.id}] ${p.title.substring(0, 25)}</span>
-                        <span class="tag-${type}">${type.toUpperCase()}</span>
-                    `;
-                    resDiv.appendChild(card);
-                });
-            } catch(e) { 
-                console.error("AI 분석 에러:", e); 
-                logDiv.innerHTML += `<div style="color:red;">❌ 분석 에러: ${e.message}</div>`;
-            }
+            posts.forEach(p => {
+                const category = resultJson[p.id] || "novel";
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.innerHTML = `
+                    <span><b>#${p.id}</b> ${p.title.substring(0, 25)}</span>
+                    <span class="tag tag-${category}">${category === 'site' ? '🚨 이슈' : '📖 소설'}</span>
+                `;
+                resDiv.appendChild(card);
+            });
+
+            statusDiv.innerText = "✅ 분석 완료!";
+        } catch(e) {
+            console.error(e);
+            statusDiv.innerText = "❌ 중단됨";
+            logDiv.innerHTML += `<div style="color:#e53e3e;"><b>에러:</b> ${e.message}</div>`;
+        } finally {
+            btn.disabled = false;
         }
-
-        document.getElementById('status').innerText = "분석 완료!";
-        btn.disabled = false;
     }
 </script>
+
 </body>
 </html>
