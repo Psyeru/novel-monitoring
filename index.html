@@ -2,112 +2,102 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>갤러리 인사이트 모니터</title>
+    <title>갤러리 딥 모니터</title>
     <style>
-        :root { --primary: #6200ea; --bg: #f3f4f6; --surface: #ffffff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif; background: var(--bg); color: #1f2937; margin: 0; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        :root { --primary: #6200ea; --bg: #f4f6f8; --surface: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif; background: var(--bg); color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 700px; margin: 0 auto; }
         
         /* 컨트롤 패널 */
-        .control-panel { background: var(--surface); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 24px; }
-        .input-group { display: flex; gap: 12px; margin-bottom: 16px; }
-        input { flex: 1; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; }
+        .control-panel { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
         input:focus { outline: none; border-color: var(--primary); }
-        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
-        button:disabled { background: #d1d5db; cursor: not-allowed; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        button:disabled { background: #cbd5e1; cursor: wait; }
 
-        #status-msg { text-align: center; font-weight: 600; color: var(--primary); margin: 16px 0; min-height: 24px; }
-        .error-box { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; }
-
-        /* 아코디언 스타일 */
-        details { background: white; margin-bottom: 15px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
-        summary { padding: 16px 20px; cursor: pointer; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: space-between; user-select: none; transition: background 0.2s; }
-        summary:hover { background: #f9fafb; }
-        summary::-webkit-details-marker { display: none; } /* 기본 삼각형 숨김 */
+        #status-msg { text-align: center; font-size: 14px; color: var(--primary); font-weight: 600; margin: 10px 0; min-height: 20px; }
+        
+        /* 아코디언 UI */
+        details { background: white; margin-bottom: 10px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+        summary { padding: 12px 16px; cursor: pointer; font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center; background: #fff; transition: background 0.2s; user-select: none; }
+        summary:hover { background: #f9f9f9; }
         
         /* 카테고리별 헤더 색상 */
-        .header-issue { color: #dc2626; border-left: 5px solid #dc2626; }
-        .header-novel { color: #2563eb; border-left: 5px solid #2563eb; }
-        .header-chat { color: #4b5563; border-left: 5px solid #9ca3af; }
-
-        /* 리스트 스타일 */
-        .list-content { border-top: 1px solid #f3f4f6; }
-        .item-row { display: flex; padding: 12px 20px; border-bottom: 1px solid #f3f4f6; align-items: center; font-size: 14px; }
-        .item-row:last-child { border-bottom: none; }
-        .item-row:hover { background: #f8fafc; }
+        .head-issue { border-left: 4px solid #ef4444; color: #b91c1c; }
+        .head-novel { border-left: 4px solid #3b82f6; color: #1d4ed8; }
+        .head-chat { border-left: 4px solid #9ca3af; color: #4b5563; }
         
-        .item-no { color: #9ca3af; width: 80px; font-size: 12px; }
-        .item-link { flex: 1; text-decoration: none; color: #1f2937; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 15px; }
-        .item-link:hover { text-decoration: underline; color: var(--primary); }
-        .item-reason { color: #6b7280; font-size: 12px; background: #f3f4f6; padding: 4px 8px; border-radius: 6px; }
+        /* 뱃지 */
+        .cnt-badge { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 12px; color: #555; font-weight: normal; }
 
-        /* 카운트 뱃지 */
-        .count-badge { background: #eee; padding: 4px 10px; border-radius: 20px; font-size: 12px; color: #555; }
+        /* 리스트 아이템 */
+        .list-box { border-top: 1px solid #f0f0f0; }
+        .item { display: flex; padding: 10px 16px; border-bottom: 1px solid #f5f5f5; align-items: center; font-size: 13px; }
+        .item:last-child { border-bottom: none; }
+        .item-no { color: #aaa; width: 70px; font-size: 12px; }
+        .item-link { flex: 1; text-decoration: none; color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
+        .item-link:hover { text-decoration: underline; color: var(--primary); }
+        .item-reason { background: #f8f9fa; color: #666; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="margin: 0;">⚡ 갤러리 인사이트</h2>
-    </div>
+    <h2 style="text-align:center; margin:0 0 20px 0;">⚡ 갤러리 딥 모니터</h2>
 
     <div class="control-panel">
         <div class="input-group">
             <input type="password" id="apiKey" placeholder="Gemini API Key">
         </div>
         <div class="input-group">
-            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744142)">
-            <input type="number" id="count" value="20" placeholder="수량" style="flex: 0.4;">
+            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744000)">
+            <input type="number" id="count" value="20" placeholder="수량" style="flex:0.4;">
         </div>
-        <button id="btnRun" onclick="startEngine()">분석 시작</button>
-        <div id="errorBox" class="error-box"></div>
+        <button id="btnRun" onclick="startProcess()">모니터링 시작</button>
     </div>
 
     <div id="status-msg">준비 완료</div>
 
-    <div id="resultArea" style="display:none;">
-        
+    <div id="result-area" style="display:none;">
         <details open>
-            <summary class="header-issue">
+            <summary class="head-issue">
                 <span>🚨 이슈 / 불탐</span>
-                <span class="count-badge" id="cnt-issue">0건</span>
+                <span class="cnt-badge" id="cnt-issue">0</span>
             </summary>
-            <div class="list-content" id="list-issue"></div>
+            <div class="list-box" id="list-issue"></div>
         </details>
 
         <details open>
-            <summary class="header-novel">
-                <span>📖 소설 / 추천 / 리뷰</span>
-                <span class="count-badge" id="cnt-novel">0건</span>
+            <summary class="head-novel">
+                <span>📖 소설 / 추천</span>
+                <span class="cnt-badge" id="cnt-novel">0</span>
             </summary>
-            <div class="list-content" id="list-novel"></div>
+            <div class="list-box" id="list-novel"></div>
         </details>
 
         <details>
-            <summary class="header-chat">
+            <summary class="head-chat">
                 <span>💬 잡담 / 기타</span>
-                <span class="count-badge" id="cnt-chat">0건</span>
+                <span class="cnt-badge" id="cnt-chat">0</span>
             </summary>
-            <div class="list-content" id="list-chat"></div>
+            <div class="list-box" id="list-chat"></div>
         </details>
-
     </div>
 </div>
 
 <script>
     const PROXY_URL = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
 
-    async function startEngine() {
+    async function startProcess() {
         const key = document.getElementById('apiKey').value.trim();
         const startNo = parseInt(document.getElementById('startNo').value);
-        const count = parseInt(document.getElementById('count').value);
+        const targetCount = parseInt(document.getElementById('count').value);
         
         const ui = {
             btn: document.getElementById('btnRun'),
             status: document.getElementById('status-msg'),
-            error: document.getElementById('errorBox'),
-            resultArea: document.getElementById('resultArea'),
+            result: document.getElementById('result-area'),
             lists: {
                 issue: document.getElementById('list-issue'),
                 novel: document.getElementById('list-novel'),
@@ -120,56 +110,98 @@
             }
         };
 
-        if(!key || !startNo) return alert("API 키와 시작 번호를 입력해주세요.");
+        if(!key || !startNo) return alert("키와 시작번호를 입력하세요.");
 
         // 초기화
         ui.btn.disabled = true;
-        ui.error.style.display = 'none';
-        ui.resultArea.style.display = 'none';
-        Object.values(ui.lists).forEach(el => el.innerHTML = '');
-        ui.status.innerText = "🚀 데이터 수집 중...";
-
+        ui.result.style.display = 'none';
+        Object.values(ui.lists).forEach(e => e.innerHTML = '');
+        Object.values(ui.cnts).forEach(e => e.innerText = '0');
+        
+        let collectedPosts = [];
+        let currentPage = 1;
+        
         try {
-            // 1. 데이터 수집 (1페이지 통째로)
-            const target = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
-            const resp = await fetch(PROXY_URL + encodeURIComponent(target));
-            if(!resp.ok) throw new Error("서버 연결 실패");
-            
-            const html = await resp.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
-            
-            let posts = [];
-            const minNo = startNo - count;
+            // ==========================================
+            // 1. 페이지 순회하며 데이터 찾기 (Page Walker)
+            // ==========================================
+            ui.status.innerText = "📡 데이터 추적 중 (페이지 스캔)...";
 
-            rows.forEach(row => {
-                const numNode = row.querySelector('.gall_num');
-                const titleNode = row.querySelector('.gall_tit a');
+            while (collectedPosts.length < targetCount) {
+                // 페이지 안전장치 (너무 많이 뒤지지 않도록)
+                if (currentPage > 10) break; 
+
+                const targetUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=${currentPage}`;
+                const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
+                const html = await resp.text();
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
                 
-                if(numNode && titleNode) {
-                    const no = parseInt(numNode.innerText.trim());
-                    const title = titleNode.innerText.trim();
-                    // 범위 필터링: (시작번호 - 개수) < no <= 시작번호
-                    if(!isNaN(no) && no <= startNo && no > minNo) {
-                        posts.push({ no, title });
+                // 페이지 내 게시물이 없으면 종료
+                if (rows.length === 0) break;
+
+                let postsOnPage = [];
+                rows.forEach(row => {
+                    const numNode = row.querySelector('.gall_num');
+                    const titleNode = row.querySelector('.gall_tit a');
+                    if(numNode && titleNode) {
+                        const no = parseInt(numNode.innerText);
+                        const title = titleNode.innerText.trim();
+                        if(!isNaN(no)) postsOnPage.push({ no, title });
+                    }
+                });
+
+                // 내림차순 정렬 (최신순)
+                postsOnPage.sort((a,b) => b.no - a.no);
+
+                // 현재 페이지의 가장 작은 번호 확인
+                const minOnPage = postsOnPage[postsOnPage.length - 1].no;
+                const maxOnPage = postsOnPage[0].no;
+
+                // [로직]
+                // 1. 만약 시작번호가 현재 페이지 범위 안에 있거나, 현재 페이지보다 더 옛날(작은) 번호라면 수집 시도
+                // 2. 만약 시작번호가 현재 페이지 Max보다 훨씬 크면? (이미 지나간 페이지) -> 그럴일은 없음(1페이지부터 하니까)
+                
+                // 타겟 번호가 이 페이지에 있거나, 이 페이지보다 더 과거에 있다면
+                if (startNo >= minOnPage) {
+                    for (let p of postsOnPage) {
+                        // 시작 번호보다 작거나 같은 것만 수집
+                        if (p.no <= startNo) {
+                            collectedPosts.push(p);
+                            if (collectedPosts.length >= targetCount) break;
+                        }
                     }
                 }
-            });
 
-            if(posts.length === 0) throw new Error("해당 범위의 게시물을 찾을 수 없습니다.");
+                // 목표 다 채웠으면 탈출
+                if (collectedPosts.length >= targetCount) break;
 
+                // 아직 못 채웠는데, 시작 번호가 이 페이지의 최소값보다 작다면? -> 다음 페이지로 가야 함
+                if (startNo < minOnPage) {
+                    currentPage++;
+                    continue; 
+                }
+
+                // 현재 페이지를 다 훑었는데도 부족하면 다음 페이지
+                currentPage++;
+            }
+
+            if (collectedPosts.length === 0) throw new Error("게시물을 찾을 수 없습니다. 번호를 확인해주세요.");
+
+            // ==========================================
             // 2. AI 분석 (Gemini 2.5 Flash)
-            ui.status.innerText = `🧠 Gemini 2.5 Flash 분석 중 (${posts.length}건)...`;
+            // ==========================================
+            ui.status.innerText = `🧠 AI 분석 중 (${collectedPosts.length}건)...`;
 
             const MODEL_NAME = "gemini-2.5-flash"; 
-            const prompt = `
-            Analyze these titles.
-            Classify into: 'issue' (Controversy, Bug, Complaint), 'novel' (Review, Rec, Story), 'chat' (General).
-            Provide short Korean reason.
-            JSON Only: {"results": { "POST_ID": {"cat": "code", "reason": "text"} }}
             
-            Titles:
-            ${posts.map(p => `${p.no}: ${p.title}`).join('\n')}
+            // 팁: AI에게 줄 때 번호만 주지 말고 제목만 깔끔하게 줘서 토큰 아끼기
+            const prompt = `
+            Classify these posts: 'issue' (controversy, complaints), 'novel' (review, recs), 'chat' (others).
+            Output JSON: {"results": {"ID": {"c": "issue/novel/chat", "r": "short reason"}}}
+            
+            Data:
+            ${collectedPosts.map(p => `${p.no}:${p.title}`).join('\n')}
             `;
 
             const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
@@ -182,49 +214,40 @@
             if(aiData.error) throw new Error(aiData.error.message);
 
             const rawText = aiData.candidates[0].content.parts[0].text;
-            const resultData = JSON.parse(rawText.replace(/```json|```/g, "").trim());
+            const resData = JSON.parse(rawText.replace(/```json|```/g, "").trim());
 
-            // 3. 결과 분류 및 렌더링
-            // 번호 내림차순 정렬
-            posts.sort((a, b) => b.no - a.no);
-
+            // ==========================================
+            // 3. 결과 렌더링 (아코디언 분류)
+            // ==========================================
             let counts = { issue: 0, novel: 0, chat: 0 };
 
-            posts.forEach(p => {
-                const info = resultData.results[p.no] || { cat: 'chat', reason: '-' };
-                const cat = info.cat; // issue, novel, chat
-                
-                // 카운트 증가
-                if(counts[cat] !== undefined) counts[cat]++;
-                else { counts['chat']++; } // 예외처리는 잡담으로
+            collectedPosts.forEach(p => {
+                const item = resData.results[p.no] || { c: 'chat', r: '-' };
+                let cat = item.c;
+                if(!['issue', 'novel', 'chat'].includes(cat)) cat = 'chat'; // 안전장치
 
-                // HTML 생성
-                const item = document.createElement('div');
-                item.className = 'item-row';
-                item.innerHTML = `
+                counts[cat]++;
+
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `
                     <span class="item-no">${p.no}</span>
                     <a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a>
-                    <span class="item-reason">${info.reason}</span>
+                    <span class="item-reason">${item.r}</span>
                 `;
-
-                // 해당 카테고리 박스에 넣기
-                if(ui.lists[cat]) ui.lists[cat].appendChild(item);
-                else ui.lists['chat'].appendChild(item);
+                ui.lists[cat].appendChild(div);
             });
 
-            // 카운트 업데이트
-            ui.cnts.issue.innerText = `${counts.issue}건`;
-            ui.cnts.novel.innerText = `${counts.novel}건`;
-            ui.cnts.chat.innerText = `${counts.chat}건`;
+            ui.cnts.issue.innerText = counts.issue;
+            ui.cnts.novel.innerText = counts.novel;
+            ui.cnts.chat.innerText = counts.chat;
 
-            ui.resultArea.style.display = 'block';
-            ui.status.innerText = "✅ 분석 완료!";
+            ui.result.style.display = 'block';
+            ui.status.innerText = "✅ 완료";
 
         } catch (e) {
             console.error(e);
-            ui.status.innerText = "❌ 중단됨";
-            ui.error.innerHTML = `오류: ${e.message}`;
-            ui.error.style.display = 'block';
+            ui.status.innerText = `❌ 오류: ${e.message}`;
         } finally {
             ui.btn.disabled = false;
         }
