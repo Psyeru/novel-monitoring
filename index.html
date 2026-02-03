@@ -2,96 +2,75 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>갤러리 인사이트 모니터</title>
+    <title>갤러리 인사이트 모니터 (v2.5)</title>
     <style>
-        :root { --primary: #5a2df2; --bg: #f8fafc; --surface: #ffffff; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 20px; line-height: 1.5; }
-        .container { max-width: 900px; margin: 0 auto; }
+        :root { --primary: #6200ea; --bg: #f3f4f6; --surface: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif; background: var(--bg); color: #1f2937; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
         
-        /* 컨트롤 패널 */
-        .control-box { background: var(--surface); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .input-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; flex: 1; font-size: 15px; transition: 0.2s; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(90, 45, 242, 0.1); }
+        /* 컨트롤 박스 */
+        .control-panel { background: var(--surface); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 24px; }
+        .input-group { display: flex; gap: 12px; margin-bottom: 16px; }
+        input { flex: 1; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; transition: border 0.2s; }
+        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.1); }
         
-        button { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; width: 100%; transition: 0.2s; }
-        button:hover { background: #4c24cc; transform: translateY(-1px); }
-        button:disabled { background: #cbd5e1; cursor: wait; transform: none; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background: #d1d5db; cursor: not-allowed; }
 
-        /* 상태 및 에러 메시지 */
-        #status-bar { margin-bottom: 15px; font-weight: 600; color: #4b5563; min-height: 24px; text-align: center; }
-        .error-msg { color: #dc2626; background: #fee2e2; padding: 10px; border-radius: 8px; font-size: 14px; margin-top: 10px; display: none; }
+        /* 상태창 & 에러 */
+        #status-msg { text-align: center; font-weight: 600; color: var(--primary); margin: 16px 0; min-height: 24px; }
+        .error-box { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; line-height: 1.5; }
 
-        /* 요약 카드 */
-        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; display: none; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); text-align: center; border: 1px solid #f1f5f9; }
-        .card h3 { margin: 0 0 5px 0; font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; }
-        .card .value { font-size: 28px; font-weight: 800; color: #1e293b; }
-        .card.issue .value { color: #ef4444; }
-
-        /* 리포트 테이블 */
-        .table-wrap { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: none; border: 1px solid #e2e8f0; }
+        /* 결과 테이블 */
+        .result-box { background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: none; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
-        th { background: #f8fafc; padding: 16px; text-align: left; font-weight: 700; color: #475569; border-bottom: 1px solid #e2e8f0; }
-        td { padding: 16px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background: #f8fafc; }
-
-        /* 뱃지 */
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; }
-        .bg-issue { background: #fee2e2; color: #991b1b; }
-        .bg-novel { background: #dbeafe; color: #1e40af; }
-        .bg-chat { background: #f3f4f6; color: #374151; }
+        th { background: #f9fafb; padding: 16px; text-align: left; font-weight: 600; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        tr:hover { background: #f9fafb; }
         
-        .post-link { text-decoration: none; color: #1e293b; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 380px; }
-        .post-link:hover { color: var(--primary); text-decoration: underline; }
-        .reason-text { font-size: 13px; color: #64748b; }
+        /* 뱃지 */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+        .tag-issue { background: #fecaca; color: #991b1b; }
+        .tag-novel { background: #bfdbfe; color: #1e40af; }
+        .tag-chat { background: #f3f4f6; color: #374151; }
+        
+        .link { color: #111827; text-decoration: none; font-weight: 500; display: block; max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .link:hover { color: var(--primary); text-decoration: underline; }
+        .comment { color: #6b7280; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div style="text-align:center; margin-bottom:20px;">
-        <h2 style="margin:0; color:#1e293b;">📊 갤러리 모니터링 대시보드</h2>
+    <div style="text-align: center; margin-bottom: 24px;">
+        <h2 style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            ⚡ 갤러리 모니터 <span style="font-size: 12px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #555;">v2.5 Flash</span>
+        </h2>
     </div>
 
-    <div class="control-box">
-        <div class="input-row">
-            <input type="password" id="apiKey" placeholder="Gemini API Key를 입력하세요">
+    <div class="control-panel">
+        <div class="input-group">
+            <input type="password" id="apiKey" placeholder="Gemini API Key">
         </div>
-        <div class="input-row">
-            <input type="number" id="startNo" placeholder="시작 게시물 번호 (예: 11744100)">
-            <input type="number" id="count" value="20" placeholder="개수 (최대 50)" style="flex: 0.3;">
+        <div class="input-group">
+            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744142)">
+            <input type="number" id="count" value="20" placeholder="수량" style="flex: 0.4;">
         </div>
-        <button id="btnRun" onclick="startAnalysis()">🚀 고속 분석 시작</button>
-        <div id="errorBox" class="error-msg"></div>
+        <button id="btnRun" onclick="startEngine()">Gemini 2.5 분석 시작</button>
+        <div id="errorBox" class="error-box"></div>
     </div>
 
-    <div id="status-bar">준비 완료</div>
+    <div id="status-msg">준비 완료</div>
 
-    <div class="summary-grid" id="summaryPanel">
-        <div class="card">
-            <h3>분석된 글</h3>
-            <div class="value" id="valTotal">-</div>
-        </div>
-        <div class="card issue">
-            <h3>이슈 감지</h3>
-            <div class="value" id="valIssue">-</div>
-        </div>
-        <div class="card">
-            <h3>주요 키워드</h3>
-            <div class="value" id="valKeyword" style="font-size: 20px;">-</div>
-        </div>
-    </div>
-
-    <div class="table-wrap" id="reportPanel">
+    <div class="result-box" id="resultPanel">
         <table>
             <thead>
                 <tr>
-                    <th width="10%">번호</th>
+                    <th width="10%">No</th>
                     <th width="12%">분류</th>
                     <th width="48%">제목</th>
-                    <th width="30%">AI 분석 코멘트</th>
+                    <th width="30%">AI 요약</th>
                 </tr>
             </thead>
             <tbody id="resultBody"></tbody>
@@ -100,154 +79,124 @@
 </div>
 
 <script>
-    // 1. 프록시 설정 (사용자 Worker 주소)
-    const PROXY_BASE = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
+    // 사용자 Worker 프록시
+    const PROXY_URL = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
 
-    async function startAnalysis() {
+    async function startEngine() {
         const key = document.getElementById('apiKey').value.trim();
         const startNo = parseInt(document.getElementById('startNo').value);
         const count = parseInt(document.getElementById('count').value);
         
         const ui = {
             btn: document.getElementById('btnRun'),
-            status: document.getElementById('status-bar'),
+            status: document.getElementById('status-msg'),
             error: document.getElementById('errorBox'),
-            summary: document.getElementById('summaryPanel'),
-            report: document.getElementById('reportPanel'),
-            tbody: document.getElementById('resultBody'),
-            vTotal: document.getElementById('valTotal'),
-            vIssue: document.getElementById('valIssue'),
-            vKeyword: document.getElementById('valKeyword')
+            result: document.getElementById('resultPanel'),
+            tbody: document.getElementById('resultBody')
         };
 
         if(!key || !startNo) {
-            alert("API 키와 시작 번호를 정확히 입력해주세요.");
+            alert("API 키와 시작 번호를 입력해주세요.");
             return;
         }
 
-        // UI 초기화
+        // UI 리셋
         ui.btn.disabled = true;
         ui.error.style.display = 'none';
-        ui.summary.style.display = 'none';
-        ui.report.style.display = 'none';
+        ui.result.style.display = 'none';
         ui.tbody.innerHTML = '';
-        ui.status.innerText = "⚡ 게시판 목록 스캔 중... (1초 소요)";
+        ui.status.innerText = "🚀 리스트 고속 수집 중...";
 
         try {
-            // 2. [속도 개선] 리스트 페이지 한 번만 호출해서 제목 50개 긁어오기
-            const targetUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
-            const proxyUrl = PROXY_BASE + encodeURIComponent(targetUrl);
+            // 1. 목록 페이지 통째로 긁어오기 (속도 10배 향상)
+            const target = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
+            const resp = await fetch(PROXY_URL + encodeURIComponent(target));
+            if(!resp.ok) throw new Error("프록시 서버 접속 실패");
             
-            const resp = await fetch(proxyUrl);
-            if (!resp.ok) throw new Error("프록시 서버 응답 실패");
             const html = await resp.text();
-            
-            // 3. HTML 파싱
             const doc = new DOMParser().parseFromString(html, 'text/html');
             const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
             
-            let collectedPosts = [];
-            
+            let posts = [];
             rows.forEach(row => {
-                const numCell = row.querySelector('.gall_num');
-                const titleCell = row.querySelector('.gall_tit a');
-                
-                if (numCell && titleCell) {
-                    const no = parseInt(numCell.innerText);
-                    const title = titleCell.innerText.trim();
-                    
-                    // 시작 번호 이하이면서 유효한 글만 수집
-                    if (!isNaN(no) && no <= startNo) {
-                        collectedPosts.push({ no, title });
-                    }
+                const numNode = row.querySelector('.gall_num');
+                const titleNode = row.querySelector('.gall_tit a');
+                if(numNode && titleNode) {
+                    const no = parseInt(numNode.innerText);
+                    const title = titleNode.innerText.trim();
+                    // 유효한 번호이고, 시작번호보다 작거나 같을 때 수집
+                    if(!isNaN(no) && no <= startNo) posts.push({ no, title });
                 }
             });
 
-            // 개수 자르기
-            collectedPosts = collectedPosts.slice(0, count);
+            // 개수 제한
+            posts = posts.slice(0, count);
 
-            if (collectedPosts.length === 0) throw new Error(`${startNo}번 이하의 게시물을 찾을 수 없습니다. (페이지가 넘어갔을 수 있음)`);
+            if(posts.length === 0) throw new Error(`${startNo}번 이하 게시물을 찾을 수 없습니다. (페이지가 밀렸을 수 있음)`);
 
-            // 4. AI 분석 (Gemini 1.5 Flash 사용 - 가장 안정적)
-            ui.status.innerText = `🧠 게시물 ${collectedPosts.length}개 정밀 분석 중...`;
+            // 2. Gemini 2.5 Flash 호출
+            ui.status.innerText = `🧠 Gemini 2.5 Flash 분석 중 (${posts.length}건)...`;
 
-            // 중요: 2.0-flash-exp 오류 방지를 위해 1.5-flash 사용 (성능 차이 미미, 안정성 최우선)
-            const MODEL = "gemini-1.5-flash"; 
-            
+            // 요청하신 2.5 모델명 적용
+            const MODEL_NAME = "gemini-2.5-flash"; 
+
             const prompt = `
-            Analyze these web novel community titles.
+            Analyze these titles from a web novel community.
+            Classify them into: 'issue' (Bugs, Complaints, Controversy), 'novel' (Review, Recommendation, Chat), 'chat' (General).
+            Provide a short reason in Korean.
+            Output JSON only: {"results": { "POST_ID": {"cat": "code", "reason": "text"} }}
             
-            Task:
-            1. Classify each title into: 'issue' (Controversy, Bug, Complaints), 'novel' (Story discussion, Reviews), 'chat' (General questions).
-            2. Provide a short reason in Korean.
-            3. Extract 1 main keyword for the overall vibe.
-
-            Output Format: JSON ONLY. No markdown.
-            {
-                "keyword": "MainKeyword",
-                "results": {
-                    "POST_NUMBER": {"cat": "issue/novel/chat", "reason": "Short reason"}
-                }
-            }
-
-            Data:
-            ${collectedPosts.map(p => `${p.no}: ${p.title}`).join('\n')}
+            Titles:
+            ${posts.map(p => `${p.no}: ${p.title}`).join('\n')}
             `;
 
-            const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
+            const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
 
             const aiData = await aiResp.json();
-            
-            // [에러 방지] AI 응답 검증
-            if (aiData.error) throw new Error(`API 오류: ${aiData.error.message}`);
-            if (!aiData.candidates || !aiData.candidates[0].content) throw new Error("AI가 응답하지 않았습니다. (안전 필터 또는 과부하)");
 
+            // 에러 핸들링 (모델명이 틀렸거나 없는 경우)
+            if(aiData.error) {
+                let msg = aiData.error.message;
+                if(msg.includes("not found")) {
+                    msg += `<br>⚠️ <b>팁:</b> 'gemini-2.5-flash'가 아직 배포되지 않았거나 API 이름이 다를 수 있습니다. (현재 2.0-flash 사용 권장)`;
+                }
+                throw new Error(msg);
+            }
+
+            // 결과 파싱
             const rawText = aiData.candidates[0].content.parts[0].text;
-            // JSON만 추출 (```json 제거)
-            const jsonStr = rawText.replace(/```json|```/g, "").trim();
-            const resultData = JSON.parse(jsonStr);
+            const jsonText = rawText.replace(/```json|```/g, "").trim();
+            const resultData = JSON.parse(jsonText);
 
-            // 5. 결과 렌더링
-            let issueCount = 0;
-            
-            collectedPosts.forEach(post => {
-                const info = resultData.results[post.no] || { cat: 'chat', reason: '-' };
-                if (info.cat === 'issue') issueCount++;
-
-                const tr = document.createElement('tr');
+            // 3. 화면 출력
+            posts.forEach(p => {
+                const info = resultData.results[p.no] || { cat: 'chat', reason: '-' };
                 
-                // 뱃지 스타일
-                let badgeHtml = '';
-                if(info.cat === 'issue') badgeHtml = '<span class="badge bg-issue">🚨 이슈</span>';
-                else if(info.cat === 'novel') badgeHtml = '<span class="badge bg-novel">📖 소설</span>';
-                else badgeHtml = '<span class="badge bg-chat">💬 잡담</span>';
+                const tr = document.createElement('tr');
+                let badge = `<span class="badge tag-chat">💬 잡담</span>`;
+                if(info.cat === 'issue') badge = `<span class="badge tag-issue">🚨 이슈</span>`;
+                if(info.cat === 'novel') badge = `<span class="badge tag-novel">📖 소설</span>`;
 
                 tr.innerHTML = `
-                    <td style="color:#64748b;">${post.no}</td>
-                    <td>${badgeHtml}</td>
-                    <td><a href="[https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=$](https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=$){post.no}" target="_blank" class="post-link">${post.title}</a></td>
-                    <td class="reason-text">${info.reason}</td>
+                    <td style="color:#999;">${p.no}</td>
+                    <td>${badge}</td>
+                    <td><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="link">${p.title}</a></td>
+                    <td class="comment">${info.reason}</td>
                 `;
                 ui.tbody.appendChild(tr);
             });
 
-            // 요약 패널 업데이트
-            ui.vTotal.innerText = collectedPosts.length;
-            ui.vIssue.innerText = issueCount;
-            ui.vKeyword.innerText = resultData.keyword || "N/A";
-
-            ui.summary.style.display = 'grid';
-            ui.report.style.display = 'block';
+            ui.result.style.display = 'block';
             ui.status.innerText = "✅ 분석 완료!";
 
         } catch (e) {
             console.error(e);
-            ui.status.innerText = "❌ 중단됨";
-            ui.error.innerText = `오류 발생: ${e.message}`;
+            ui.status.innerText = "❌ 분석 중단";
+            ui.error.innerHTML = `<b>오류 발생:</b> ${e.message}`;
             ui.error.style.display = 'block';
         } finally {
             ui.btn.disabled = false;
