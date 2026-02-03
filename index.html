@@ -2,219 +2,244 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>갤러리 인텔리전스 모니터</title>
+    <title>갤러리 인사이트 대시보드</title>
     <style>
-        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; padding: 20px; background: #f0f2f5; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        /* 깔끔한 보고서 스타일 */
+        :root { --primary: #5a2df2; --bg: #f4f7fa; --surface: #ffffff; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
         
-        /* 헤더 & 입력창 */
-        h2 { margin-top: 0; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
-        .control-panel { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; }
-        button { background: #5a2df2; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #4824c9; }
-        button:disabled { background: #ccc; cursor: wait; }
-
-        /* 요약 대시보드 */
-        .summary-box { display: flex; gap: 15px; margin-bottom: 20px; display: none; }
-        .stat-card { flex: 1; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .stat-total { background: #f8f9fa; border: 1px solid #e9ecef; }
-        .stat-issue { background: #fff5f5; border: 1px solid #ffc9c9; color: #c53030; }
-        .stat-trend { flex: 2; background: #f0f5ff; border: 1px solid #c3dafe; color: #2b6cb0; text-align: left; display: flex; align-items: center; padding-left: 20px; font-weight: 600; font-size: 14px; }
-        .stat-value { font-size: 24px; font-weight: 800; display: block; margin-top: 5px; }
-        .stat-label { font-size: 12px; color: #666; font-weight: bold; }
-
-        /* 로그 & 테이블 */
-        #status { font-size: 13px; color: #5a2df2; margin-bottom: 10px; font-weight: 600; height: 20px; }
-        .report-table { width: 100%; border-collapse: collapse; font-size: 13px; display: none; }
-        .report-table th { background: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid #eee; color: #555; }
-        .report-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
-        .report-table tr:hover { background: #fdfdfd; }
+        /* 헤더 섹션 */
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { margin: 0; color: #1f2937; display: flex; align-items: center; gap: 10px; }
         
-        /* 태그 스타일 */
-        .badge { padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 11px; white-space: nowrap; }
-        .badge-issue { background: #ffe2e2; color: #e53e3e; } /* 이슈/불탐 */
-        .badge-review { background: #e6fffa; color: #2c7a7b; } /* 리뷰/추천 */
-        .badge-chat { background: #edf2f7; color: #4a5568; } /* 잡담 */
-        .badge-info { background: #ebf8ff; color: #3182ce; } /* 정보/소식 */
+        /* 컨트롤 패널 */
+        .control-box { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+        input { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; flex: 1; font-size: 14px; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        button:hover { background: #4c24cc; }
+        button:disabled { background: #cbd5e1; cursor: not-allowed; }
 
-        .title-link { text-decoration: none; color: #333; font-weight: 500; display: block; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .title-link:hover { color: #5a2df2; text-decoration: underline; }
-        .id-cell { color: #999; font-family: monospace; }
+        /* 상태 바 */
+        #status-bar { margin-bottom: 15px; font-size: 14px; font-weight: 600; color: var(--primary); height: 20px; }
+
+        /* 요약 카드 */
+        .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; display: none; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; }
+        .card h3 { margin: 0 0 10px 0; font-size: 14px; color: #6b7280; }
+        .card .value { font-size: 28px; font-weight: 800; color: #111; }
+        .card.issue .value { color: #ef4444; }
+
+        /* 리포트 테이블 */
+        .table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: none; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { background: #f9fafb; padding: 15px; text-align: left; font-weight: 600; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
+        td { padding: 15px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
+        tr:hover { background: #f9fafb; }
+        
+        /* 뱃지 디자인 */
+        .badge { padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 12px; }
+        .bg-issue { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .bg-novel { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+        .bg-info { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .bg-chat { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+
+        .ai-comment { font-size: 13px; color: #6b7280; margin-left: 8px; font-style: italic; }
+        .post-link { text-decoration: none; color: #1f2937; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 400px; }
+        .post-link:hover { color: var(--primary); text-decoration: underline; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>⚡ 갤러리 인텔리전스 모니터</h2>
-    
-    <div class="control-panel">
+    <header>
+        <h2>📊 갤러리 인사이트 모니터</h2>
+    </header>
+
+    <div class="control-box">
         <input type="password" id="apiKey" placeholder="Gemini API Key">
-        <input type="number" id="lastNo" placeholder="시작 번호">
-        <input type="number" id="count" value="15" placeholder="수량">
-    </div>
-    <button id="startBtn" onclick="run()" style="width:100%;">🚀 고속 분석 시작</button>
-
-    <div id="status"></div>
-
-    <div class="summary-box" id="summaryBox">
-        <div class="stat-card stat-total">
-            <span class="stat-label">분석된 글</span>
-            <span class="stat-value" id="valTotal">0</span>
-        </div>
-        <div class="stat-card stat-issue">
-            <span class="stat-label">감지된 이슈</span>
-            <span class="stat-value" id="valIssue">0</span>
-        </div>
-        <div class="stat-card stat-trend">
-            <span id="valTrend">데이터 대기 중...</span>
-        </div>
+        <input type="number" id="startNo" placeholder="시작 번호 (예: 11744085)">
+        <input type="number" id="count" value="20" placeholder="수량" style="max-width: 80px;">
+        <button id="btnRun" onclick="startAnalysis()">분석 시작</button>
     </div>
 
-    <table class="report-table" id="resultTable">
-        <thead>
-            <tr>
-                <th width="10%">번호</th>
-                <th width="15%">분류</th>
-                <th width="50%">제목</th>
-                <th width="25%">AI 코멘트</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <div id="status-bar">준비 완료</div>
+
+    <div class="summary-grid" id="summaryPanel">
+        <div class="card">
+            <h3>분석된 게시물</h3>
+            <div class="value" id="valTotal">-</div>
+        </div>
+        <div class="card issue">
+            <h3>발견된 이슈</h3>
+            <div class="value" id="valIssue">-</div>
+        </div>
+        <div class="card">
+            <h3>주요 키워드</h3>
+            <div class="value" id="valKeyword" style="font-size: 16px; display:flex; align-items:center; justify-content:center; height: 34px;">-</div>
+        </div>
+    </div>
+
+    <div class="table-container" id="reportPanel">
+        <table>
+            <thead>
+                <tr>
+                    <th width="10%">번호</th>
+                    <th width="15%">분류</th>
+                    <th width="45%">제목</th>
+                    <th width="30%">AI 코멘트</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    const PROXY_URL = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
+    // 1. 프록시 설정 (사용자님의 워커 주소)
+    const PROXY_BASE = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
 
-    async function run() {
+    async function startAnalysis() {
         const key = document.getElementById('apiKey').value;
-        const lastNo = parseInt(document.getElementById('lastNo').value);
+        const startNo = parseInt(document.getElementById('startNo').value);
         const count = parseInt(document.getElementById('count').value);
         
         const ui = {
-            btn: document.getElementById('startBtn'),
-            status: document.getElementById('status'),
-            summary: document.getElementById('summaryBox'),
-            table: document.getElementById('resultTable'),
-            tbody: document.getElementById('tableBody'),
+            btn: document.getElementById('btnRun'),
+            status: document.getElementById('status-bar'),
+            summary: document.getElementById('summaryPanel'),
+            report: document.getElementById('reportPanel'),
+            tbody: document.getElementById('resultBody'),
             vTotal: document.getElementById('valTotal'),
             vIssue: document.getElementById('valIssue'),
-            vTrend: document.getElementById('valTrend')
+            vKeyword: document.getElementById('valKeyword')
         };
 
-        if(!key || !lastNo) return alert("설정을 확인하세요.");
+        if(!key || !startNo) return alert("API 키와 시작 번호를 입력하세요.");
 
-        // 초기화
+        // UI 초기화
         ui.btn.disabled = true;
         ui.summary.style.display = 'none';
-        ui.table.style.display = 'none';
-        ui.tbody.innerHTML = "";
-        
+        ui.report.style.display = 'none';
+        ui.tbody.innerHTML = '';
+        ui.status.innerText = "🚀 데이터 고속 수집 중 (리스트 스캔)...";
+
         try {
-            // 1. 병렬 데이터 수집 (속도 핵심)
-            ui.status.innerText = `⚡ ${count}개 게시물 병렬 수집 중...`;
+            // 2. [속도 혁신] 게시글 하나씩 말고, '목록 페이지'를 통째로 가져옵니다.
+            // 1페이지에 50개 글이 있으므로, 요청 1번으로 50개 확보 가능.
+            const targetUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
+            const proxyUrl = PROXY_BASE + encodeURIComponent(targetUrl);
             
-            // Promise.all로 동시에 요청 날리기 (순차 실행 X)
-            const fetchPromises = Array.from({ length: count }, (_, i) => {
-                const currentNo = lastNo - i;
-                const target = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${currentNo}`;
-                return fetch(PROXY_URL + encodeURIComponent(target))
-                    .then(res => res.text())
-                    .then(html => {
-                        if(html.includes("존재하지 않습니다")) return null;
-                        const doc = new DOMParser().parseFromString(html, 'text/html');
-                        const title = doc.querySelector('.title_subject')?.innerText;
-                        return title ? { id: currentNo, title } : null;
-                    })
-                    .catch(() => null);
+            const resp = await fetch(proxyUrl);
+            const html = await resp.text();
+            
+            // 3. HTML 파싱 (리스트에서 번호와 제목 추출)
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
+            
+            let collectedPosts = [];
+            
+            rows.forEach(row => {
+                const numCell = row.querySelector('.gall_num');
+                const titleCell = row.querySelector('.gall_tit a');
+                
+                if (numCell && titleCell) {
+                    const no = parseInt(numCell.innerText);
+                    const title = titleCell.innerText.trim();
+                    
+                    // 사용자가 입력한 번호부터 아래로 'count' 개수만큼 수집
+                    if (!isNaN(no) && no <= startNo) {
+                        collectedPosts.push({ no, title });
+                    }
+                }
             });
 
-            const results = await Promise.all(fetchPromises);
-            const posts = results.filter(p => p !== null); // 실패/삭제된 글 제거
+            // 개수 제한 자르기
+            collectedPosts = collectedPosts.slice(0, count);
 
-            if (posts.length === 0) throw new Error("수집된 글이 없습니다.");
+            if (collectedPosts.length === 0) throw new Error("해당 범위의 게시물을 찾지 못했습니다. (페이지 범위를 벗어났을 수 있음)");
 
-            // 2. AI 분석 (리포트 모드)
-            ui.status.innerText = "🧠 Gemini 2.0 Flash 분석 보고서 생성 중...";
+            // 4. AI 분석 (Gemini 1.5 Flash 사용 - 안정성/속도 최적)
+            ui.status.innerText = `🧠 AI 정밀 분석 중 (${collectedPosts.length}건)...`;
 
-            const MODEL_NAME = "gemini-2.0-flash-exp"; 
+            const MODEL = "gemini-1.5-flash"; // 현재 API에서 에러 없이 가장 빠름
             const prompt = `
-            You are a community monitoring assistant. Analyze these post titles.
+            You are a professional monitoring analyst.
+            Analyze these community post titles.
             
-            1. Categorize each post into ONE of these: 
-               - 'issue' (Platform bugs, payments, controversy, burning)
-               - 'review' (Novel review, recommendation)
-               - 'info' (News, author notice)
-               - 'chat' (General chat, questions)
-            
-            2. Provide a 1-sentence summary of the overall atmosphere (Korean).
-            3. Provide a very short reason for each classification (Korean).
+            Task 1: Classify each post into: 'issue' (Controversy, Bug, Complaint), 'novel' (Story, Recs), 'info' (News), 'chat' (General).
+            Task 2: Provide a very short reason (Korean) like "작품 추천", "플랫폼 오류".
+            Task 3: Pick 1 main keyword describing the overall vibe.
 
-            Response Format (JSON ONLY):
+            Output JSON only:
             {
-                "summary": "Overall atmosphere summary here...",
-                "data": {
-                    "POST_ID": {"cat": "category_code", "reason": "short reason"}
+                "keyword": "Main Vibe Keyword",
+                "results": {
+                    "POST_NUMBER": {"cat": "code", "reason": "text"}
                 }
             }
 
             Titles:
-            ${posts.map(p => `${p.id}: ${p.title}`).join('\n')}
+            ${collectedPosts.map(p => `${p.no}: ${p.title}`).join('\n')}
             `;
 
-            const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
+            const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { response_mime_type: "application/json" }
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
 
-            const data = await aiRes.json();
-            const aiResult = JSON.parse(data.candidates[0].content.parts[0].text);
+            const aiData = await aiResp.json();
+            if (aiData.error) throw new Error(aiData.error.message);
 
-            // 3. 결과 렌더링
+            // JSON 파싱 (안전장치 추가)
+            const rawText = aiData.candidates[0].content.parts[0].text;
+            const jsonStr = rawText.match(/\{[\s\S]*\}/)[0]; 
+            const resultData = JSON.parse(jsonStr);
+
+            // 5. 결과 화면 출력 (리포트 스타일)
             let issueCount = 0;
             
-            posts.forEach(p => {
-                const info = aiResult.data[p.id] || { cat: 'chat', reason: '-' };
-                if(info.cat === 'issue') issueCount++;
+            collectedPosts.forEach(post => {
+                const info = resultData.results[post.no] || { cat: 'chat', reason: '-' };
+                if (info.cat === 'issue') issueCount++;
 
-                const row = document.createElement('tr');
-                // 뱃지 색상 매핑
-                const badgeClass = `badge-${info.cat}`; 
-                const catName = {
-                    'issue': '🚨 이슈', 'review': '📖 리뷰', 'info': '📢 정보', 'chat': '💬 잡담'
-                }[info.cat] || '기타';
+                const tr = document.createElement('tr');
+                
+                // 뱃지 스타일 매핑
+                const badges = {
+                    'issue': '<span class="badge bg-issue">🚨 이슈</span>',
+                    'novel': '<span class="badge bg-novel">📖 소설</span>',
+                    'info': '<span class="badge bg-info">📢 정보</span>',
+                    'chat': '<span class="badge bg-chat">💬 잡담</span>'
+                };
 
-                row.innerHTML = `
-                    <td class="id-cell">${p.id}</td>
-                    <td><span class="badge ${badgeClass}">${catName}</span></td>
-                    <td><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.id}" target="_blank" class="title-link">${p.title}</a></td>
-                    <td style="color:#666;">${info.reason}</td>
+                tr.innerHTML = `
+                    <td style="color:#888;">${post.no}</td>
+                    <td>${badges[info.cat] || badges['chat']}</td>
+                    <td><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${post.no}" target="_blank" class="post-link">${post.title}</a></td>
+                    <td style="color:#555; font-size:13px;">${info.reason}</td>
                 `;
-                ui.tbody.appendChild(row);
+                ui.tbody.appendChild(tr);
             });
 
-            // 상단 요약 업데이트
-            ui.vTotal.innerText = posts.length;
+            // 요약 패널 업데이트
+            ui.vTotal.innerText = collectedPosts.length;
             ui.vIssue.innerText = issueCount;
-            ui.vTrend.innerText = "💡 " + (aiResult.summary || "특이사항 없음");
-            
-            // 화면 표시
-            ui.summary.style.display = 'flex';
-            ui.table.style.display = 'table';
+            ui.vKeyword.innerText = resultData.keyword || "데이터 없음";
+
+            ui.summary.style.display = 'grid';
+            ui.report.style.display = 'block';
             ui.status.innerText = "✅ 분석 완료";
 
         } catch (e) {
             console.error(e);
-            ui.status.innerText = `❌ 오류: ${e.message}`;
+            ui.status.innerHTML = `<span style="color:red">❌ 오류: ${e.message}</span>`;
         } finally {
             ui.btn.disabled = false;
         }
     }
 </script>
+
 </body>
 </html>
