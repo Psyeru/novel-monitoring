@@ -86,21 +86,33 @@
         document.getElementById('startNo').disabled = document.getElementById('autoLatest').checked;
     }
 
-    async function getLatestNo() {
-        log("🔍 최신글 번호 확인 중...");
+async function getLatestNo() {
+        log("🔍 장갤 목록 접속 중... (최신 번호 추출)");
         try {
             const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
             const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
             const html = await resp.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
             
-            // 공지가 아닌 첫 번째 일반글의 번호를 찾음
+            // 모든 게시글 행을 가져옴
             const rows = doc.querySelectorAll('.ub-content.us-post');
+            
             for(let row of rows) {
-                const no = parseInt(row.querySelector('.gall_num')?.innerText);
-                if(!isNaN(no) && no < 9000000) return no; // 900만 이하는 일반글로 간주
+                // '공지'라고 적힌 엘리먼트가 있는지 확인
+                const isNotice = row.querySelector('.gall_num').innerText.includes('공지');
+                const no = parseInt(row.querySelector('.gall_num').innerText);
+
+                // 숫자가 맞고, 공지가 아니며, 너무 작은 번호(옛날공지)가 아닌 첫 번째 글 선택
+                if(!isNaN(no) && !isNotice && no > 10000000) { 
+                    log(`✅ 최신글 번호 감지 성공: ${no}`);
+                    return no; 
+                }
             }
-        } catch(e) { log("❌ 최신 번호 가져오기 실패"); return null; }
+            throw new Error("유효한 일반글 번호를 찾지 못했습니다.");
+        } catch(e) { 
+            log("❌ 최신 번호 가져오기 실패: " + e.message); 
+            return null; 
+        }
     }
 
     async function startMonitor() {
