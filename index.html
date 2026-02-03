@@ -2,12 +2,13 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>노벨피아 스마트 모니터 v4.4</title>
+    <title>노벨피아 스마트 모니터 v4.5</title>
     <style>
         :root { --primary: #5a2df2; --bg: #f3f4f6; --surface: #ffffff; }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1f2937; }
         .container { max-width: 850px; margin: 0 auto; }
 
+        /* 컨트롤 박스 - v4.1 레이아웃 복구 */
         .control-box { background: var(--surface); padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .top-row { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 15px; }
         .auto-check { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; color: var(--primary); cursor: pointer; }
@@ -20,11 +21,13 @@
         button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
         button:hover { background: #4823c4; }
 
+        /* 📊 프로그레스 바 복구 */
         .prog-wrap { margin-top: 20px; display: block !important; }
         .prog-container { height: 12px; background: #e5e7eb; border-radius: 6px; overflow: hidden; position: relative; }
         .prog-bar { height: 100%; background: linear-gradient(90deg, #5a2df2, #a855f7); width: 0%; transition: width 0.3s ease-in-out; }
         .prog-info { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; font-weight: bold; }
 
+        /* 결과 영역 레이아웃 고정 */
         details { background: white; margin-bottom: 10px; border-radius: 15px; border: 1px solid #e5e7eb; overflow: hidden; }
         summary { padding: 15px 20px; cursor: pointer; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
         .item { padding: 12px 20px; border-top: 1px solid #f3f4f6; display: flex; align-items: center; font-size: 14px; }
@@ -38,7 +41,7 @@
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; margin-bottom: 20px;">⚡ 노벨피아 스마트 모니터 v4.4</h2>
+    <h2 style="text-align:center; margin-bottom: 20px;">⚡ 노벨피아 스마트 모니터 v4.5</h2>
 
     <div class="control-box">
         <input type="password" id="apiKey" class="input-main" placeholder="Gemini API Key를 입력하세요">
@@ -50,7 +53,7 @@
         </div>
         <div class="input-group">
             <input type="number" id="startNo" class="input-sub" placeholder="시작 번호" disabled>
-            <input type="number" id="count" class="input-sub" value="100" placeholder="분석 수량" style="flex:0.4;">
+            <input type="number" id="count" class="input-sub" value="20" placeholder="수량" style="flex:0.4;">
         </div>
         <button id="btnRun" onclick="startMonitor()">🚀 분석 프로세스 가동</button>
 
@@ -92,13 +95,12 @@
             
             for (let row of rows) {
                 const numCell = row.querySelector('.gall_num');
-                const subjectCell = row.querySelector('.gall_subject');
+                const subCell = row.querySelector('.gall_subject');
                 
-                // 공지사항 텍스트가 있으면 무조건 패스
-                if (!numCell || numCell.innerText.includes('공지') || (subjectCell && subjectCell.innerText.includes('공지'))) continue;
+                // 공지사항 텍스트 완전 차단
+                if (!numCell || numCell.innerText.includes('공지') || (subCell && subCell.innerText.includes('공지'))) continue;
                 
                 const no = parseInt(numCell.innerText.trim());
-                // 현재 장갤 번호 대역(1100만 이상)만 인정
                 if(!isNaN(no) && no > 11000000) return no;
             }
         } catch(e) { log("번호 감지 실패"); return null; }
@@ -136,7 +138,7 @@
                         const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
                         const html = await resp.text();
                         
-                        // [공지 박멸] 본문 내에 공지 표시가 있으면 분석 제외
+                        // [공지 박멸] 본문 내 공지 특징 발견 시 제외
                         if(html.includes('gall_num">공지') || html.includes('<b>공지')) return null;
 
                         const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -149,8 +151,8 @@
                 const posts = (await Promise.all(fetchPromises)).filter(p => p && p.no);
 
                 if (posts.length > 0) {
-                    const prompt = `너는 노벨피아 플랫폼 모니터링 직원이야. 다음 기준에 맞춰 엄격히 분류해.
-                    1. 'issue': 노벨피아의 시스템 오류, 결제 문제, 뷰어 렉, 운영팀 비판. (갤러리 완장/운영진 관련 잡담은 절대로 issue가 아니라 'chat'임)
+                    const prompt = `너는 노벨피아 플랫폼 모니터링 직원이야.
+                    1. 'issue': 노벨피아의 시스템 오류, 결제 실패, 뷰어 렉, 운영진 비판. (갤러리 완장/운영진 관련 잡담은 절대 issue 아님 -> chat으로 분류)
                     2. 'novel': 소설 추천, 리뷰, 감상평.
                     3. 'chat': 갤러리 일상, 완장 관련 언급, 노피아와 무관한 잡담.
                     출력 JSON: {"results": {"ID": {"c": "issue/novel/chat", "r": "이유"}}}
@@ -187,7 +189,7 @@
                 document.getElementById('cnt-chat').innerText = counts.chat;
             }
             ui.status.innerText = "분석 완료";
-            log("✅ 100개 분석 완료");
+            log("✅ 분석 완료");
         } catch(e) { log(`에러: ${e.message}`); } finally { ui.btn.disabled = false; }
     }
 </script>
