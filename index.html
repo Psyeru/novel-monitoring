@@ -2,31 +2,86 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>노벨 딥 모니터 v5 (Gemini Flash)</title>
+    <title>갤러리 인텔리전스 모니터</title>
     <style>
-        body { font-family: 'Pretendard', sans-serif; padding: 20px; background: #f4f7f6; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { background: #5a2df2; color: white; border: none; font-weight: bold; cursor: pointer; }
-        #status { font-weight: bold; color: #5a2df2; margin: 15px 0; text-align: center; }
-        #log { font-size: 11px; color: #666; background: #f9f9f9; padding: 10px; border-radius: 5px; max-height: 100px; overflow-y: auto; margin-bottom: 10px; }
-        .result-card { border-bottom: 1px solid #eee; padding: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .tag-site { background: #fff1f0; color: #d32f2f; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
-        .tag-novel { background: #f0f5ff; color: #1a73e8; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; padding: 20px; background: #f0f2f5; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        /* 헤더 & 입력창 */
+        h2 { margin-top: 0; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
+        .control-panel { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        input, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; font-size: 14px; }
+        button { background: #5a2df2; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #4824c9; }
+        button:disabled { background: #ccc; cursor: wait; }
+
+        /* 요약 대시보드 */
+        .summary-box { display: flex; gap: 15px; margin-bottom: 20px; display: none; }
+        .stat-card { flex: 1; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-total { background: #f8f9fa; border: 1px solid #e9ecef; }
+        .stat-issue { background: #fff5f5; border: 1px solid #ffc9c9; color: #c53030; }
+        .stat-trend { flex: 2; background: #f0f5ff; border: 1px solid #c3dafe; color: #2b6cb0; text-align: left; display: flex; align-items: center; padding-left: 20px; font-weight: 600; font-size: 14px; }
+        .stat-value { font-size: 24px; font-weight: 800; display: block; margin-top: 5px; }
+        .stat-label { font-size: 12px; color: #666; font-weight: bold; }
+
+        /* 로그 & 테이블 */
+        #status { font-size: 13px; color: #5a2df2; margin-bottom: 10px; font-weight: 600; height: 20px; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 13px; display: none; }
+        .report-table th { background: #f8f9fa; padding: 10px; text-align: left; border-bottom: 2px solid #eee; color: #555; }
+        .report-table td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: middle; }
+        .report-table tr:hover { background: #fdfdfd; }
+        
+        /* 태그 스타일 */
+        .badge { padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 11px; white-space: nowrap; }
+        .badge-issue { background: #ffe2e2; color: #e53e3e; } /* 이슈/불탐 */
+        .badge-review { background: #e6fffa; color: #2c7a7b; } /* 리뷰/추천 */
+        .badge-chat { background: #edf2f7; color: #4a5568; } /* 잡담 */
+        .badge-info { background: #ebf8ff; color: #3182ce; } /* 정보/소식 */
+
+        .title-link { text-decoration: none; color: #333; font-weight: 500; display: block; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .title-link:hover { color: #5a2df2; text-decoration: underline; }
+        .id-cell { color: #999; font-family: monospace; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🚀 노벨 딥 모니터 (최신 Flash 적용)</h2>
-    <input type="password" id="apiKey" placeholder="Gemini API Key 입력">
-    <input type="number" id="lastNo" placeholder="시작 번호 (예: 11744085)">
-    <input type="number" id="count" value="10">
-    <button id="startBtn" onclick="run()">최신 모델 분석 시작</button>
+    <h2>⚡ 갤러리 인텔리전스 모니터</h2>
+    
+    <div class="control-panel">
+        <input type="password" id="apiKey" placeholder="Gemini API Key">
+        <input type="number" id="lastNo" placeholder="시작 번호">
+        <input type="number" id="count" value="15" placeholder="수량">
+    </div>
+    <button id="startBtn" onclick="run()" style="width:100%;">🚀 고속 분석 시작</button>
 
-    <div id="status">대기 중...</div>
-    <div id="log"></div>
-    <div id="results"><h3>📊 분석 결과</h3></div>
+    <div id="status"></div>
+
+    <div class="summary-box" id="summaryBox">
+        <div class="stat-card stat-total">
+            <span class="stat-label">분석된 글</span>
+            <span class="stat-value" id="valTotal">0</span>
+        </div>
+        <div class="stat-card stat-issue">
+            <span class="stat-label">감지된 이슈</span>
+            <span class="stat-value" id="valIssue">0</span>
+        </div>
+        <div class="stat-card stat-trend">
+            <span id="valTrend">데이터 대기 중...</span>
+        </div>
+    </div>
+
+    <table class="report-table" id="resultTable">
+        <thead>
+            <tr>
+                <th width="10%">번호</th>
+                <th width="15%">분류</th>
+                <th width="50%">제목</th>
+                <th width="25%">AI 코멘트</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
 </div>
 
 <script>
@@ -36,89 +91,128 @@
         const key = document.getElementById('apiKey').value;
         const lastNo = parseInt(document.getElementById('lastNo').value);
         const count = parseInt(document.getElementById('count').value);
-        const logDiv = document.getElementById('log');
-        const resDiv = document.getElementById('results');
-        const statusDiv = document.getElementById('status');
-        const btn = document.getElementById('startBtn');
+        
+        const ui = {
+            btn: document.getElementById('startBtn'),
+            status: document.getElementById('status'),
+            summary: document.getElementById('summaryBox'),
+            table: document.getElementById('resultTable'),
+            tbody: document.getElementById('tableBody'),
+            vTotal: document.getElementById('valTotal'),
+            vIssue: document.getElementById('valIssue'),
+            vTrend: document.getElementById('valTrend')
+        };
 
-        if(!key || !lastNo) return alert("API 키와 시작 번호를 확인해주세요.");
+        if(!key || !lastNo) return alert("설정을 확인하세요.");
 
-        btn.disabled = true;
-        logDiv.innerHTML = "<b>[System]</b> 프로세스 시작...<br>";
-        resDiv.innerHTML = "<h3>📊 분석 결과</h3>";
-        let posts = [];
-
+        // 초기화
+        ui.btn.disabled = true;
+        ui.summary.style.display = 'none';
+        ui.table.style.display = 'none';
+        ui.tbody.innerHTML = "";
+        
         try {
-            // 1. 데이터 수집 단계
-            for(let i = 0; i < count; i++) {
+            // 1. 병렬 데이터 수집 (속도 핵심)
+            ui.status.innerText = `⚡ ${count}개 게시물 병렬 수집 중...`;
+            
+            // Promise.all로 동시에 요청 날리기 (순차 실행 X)
+            const fetchPromises = Array.from({ length: count }, (_, i) => {
                 const currentNo = lastNo - i;
-                statusDiv.innerText = `📦 데이터 수집 중... (${i+1}/${count})`;
-                try {
-                    const target = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${currentNo}`;
-                    const res = await fetch(PROXY_URL + encodeURIComponent(target));
-                    const html = await res.text();
-                    const doc = new DOMParser().parseFromString(html, 'text/html');
-                    const title = doc.querySelector('.title_subject')?.innerText;
-                    
-                    if(title) {
-                        posts.push({ id: currentNo, title });
-                        logDiv.innerHTML += `<div>✅ ${currentNo} 수집 완료</div>`;
-                    } else {
-                        logDiv.innerHTML += `<div>⚠️ ${currentNo} 존재하지 않음</div>`;
-                    }
-                } catch(e) { logDiv.innerHTML += `<div>❌ ${currentNo} 수집 실패</div>`; }
-                logDiv.scrollTop = logDiv.scrollHeight;
+                const target = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${currentNo}`;
+                return fetch(PROXY_URL + encodeURIComponent(target))
+                    .then(res => res.text())
+                    .then(html => {
+                        if(html.includes("존재하지 않습니다")) return null;
+                        const doc = new DOMParser().parseFromString(html, 'text/html');
+                        const title = doc.querySelector('.title_subject')?.innerText;
+                        return title ? { id: currentNo, title } : null;
+                    })
+                    .catch(() => null);
+            });
+
+            const results = await Promise.all(fetchPromises);
+            const posts = results.filter(p => p !== null); // 실패/삭제된 글 제거
+
+            if (posts.length === 0) throw new Error("수집된 글이 없습니다.");
+
+            // 2. AI 분석 (리포트 모드)
+            ui.status.innerText = "🧠 Gemini 2.0 Flash 분석 보고서 생성 중...";
+
+            const MODEL_NAME = "gemini-2.0-flash-exp"; 
+            const prompt = `
+            You are a community monitoring assistant. Analyze these post titles.
+            
+            1. Categorize each post into ONE of these: 
+               - 'issue' (Platform bugs, payments, controversy, burning)
+               - 'review' (Novel review, recommendation)
+               - 'info' (News, author notice)
+               - 'chat' (General chat, questions)
+            
+            2. Provide a 1-sentence summary of the overall atmosphere (Korean).
+            3. Provide a very short reason for each classification (Korean).
+
+            Response Format (JSON ONLY):
+            {
+                "summary": "Overall atmosphere summary here...",
+                "data": {
+                    "POST_ID": {"cat": "category_code", "reason": "short reason"}
+                }
             }
 
-            // 2. AI 분석 단계
-            if(posts.length === 0) throw new Error("분석할 게시글이 없습니다.");
-            statusDiv.innerText = "🧠 최신 Flash 모델 분석 중...";
-            
-            // 모델 명칭: 구글 API에서 현재 가장 안정적인 최신 Flash 모델 경로입니다.
-            const MODEL_NAME = "gemini-2.0-flash-exp"; 
-            
-            const prompt = `Analyze these titles and categorize as 'site' (platform issues/news) or 'novel' (content/recs). 
-            Response MUST be a JSON object ONLY.
-            Format: {"ID": "category"}
             Titles:
-            ${posts.map(p => `${p.id}: ${p.title}`).join('\n')}`;
+            ${posts.map(p => `${p.id}: ${p.title}`).join('\n')}
+            `;
 
             const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        response_mime_type: "application/json" // JSON 전용 모드 강제 설정
-                    }
+                    generationConfig: { response_mime_type: "application/json" }
                 })
             });
 
             const data = await aiRes.json();
-            if(data.error) throw new Error(data.error.message);
+            const aiResult = JSON.parse(data.candidates[0].content.parts[0].text);
 
-            // JSON 텍스트 파싱
-            const aiRawContent = data.candidates[0].content.parts[0].text;
-            const resultJson = JSON.parse(aiRawContent);
-
+            // 3. 결과 렌더링
+            let issueCount = 0;
+            
             posts.forEach(p => {
-                const category = resultJson[p.id] || "novel";
-                const card = document.createElement('div');
-                card.className = 'result-card';
-                card.innerHTML = `
-                    <span><b>#${p.id}</b> ${p.title.substring(0, 20)}...</span>
-                    <span class="tag-${category}">${category === 'site' ? '🚨 이슈' : '📖 소설'}</span>
+                const info = aiResult.data[p.id] || { cat: 'chat', reason: '-' };
+                if(info.cat === 'issue') issueCount++;
+
+                const row = document.createElement('tr');
+                // 뱃지 색상 매핑
+                const badgeClass = `badge-${info.cat}`; 
+                const catName = {
+                    'issue': '🚨 이슈', 'review': '📖 리뷰', 'info': '📢 정보', 'chat': '💬 잡담'
+                }[info.cat] || '기타';
+
+                row.innerHTML = `
+                    <td class="id-cell">${p.id}</td>
+                    <td><span class="badge ${badgeClass}">${catName}</span></td>
+                    <td><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.id}" target="_blank" class="title-link">${p.title}</a></td>
+                    <td style="color:#666;">${info.reason}</td>
                 `;
-                resDiv.appendChild(card);
+                ui.tbody.appendChild(row);
             });
 
-            statusDiv.innerText = "✅ 분석 완료!";
-        } catch(e) {
+            // 상단 요약 업데이트
+            ui.vTotal.innerText = posts.length;
+            ui.vIssue.innerText = issueCount;
+            ui.vTrend.innerText = "💡 " + (aiResult.summary || "특이사항 없음");
+            
+            // 화면 표시
+            ui.summary.style.display = 'flex';
+            ui.table.style.display = 'table';
+            ui.status.innerText = "✅ 분석 완료";
+
+        } catch (e) {
             console.error(e);
-            statusDiv.innerText = "❌ 중단됨";
-            logDiv.innerHTML += `<div style="color:red;"><b>오류:</b> ${e.message}</div>`;
+            ui.status.innerText = `❌ 오류: ${e.message}`;
         } finally {
-            btn.disabled = false;
+            ui.btn.disabled = false;
         }
     }
 </script>
