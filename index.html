@@ -2,205 +2,151 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>노벨피아 심층 분석기</title>
+    <title>노벨피아 디버깅 모니터</title>
     <style>
         :root { --primary: #5a2df2; --bg: #f8f9fa; --surface: #ffffff; }
-        body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 800px; margin: 0 auto; }
 
-        /* 컨트롤 패널 */
-        .control-box { background: var(--surface); padding: 25px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        input { flex: 1; padding: 14px; border: 1px solid #e1e4e8; border-radius: 10px; font-size: 15px; transition: 0.2s; }
-        input:focus { border-color: var(--primary); outline: none; }
-        button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.1s; }
-        button:active { transform: scale(0.98); }
-        button:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .control-box { background: var(--surface); padding: 20px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #ccc; }
 
         /* 프로그레스 바 */
-        .progress-area { margin-top: 20px; display: none; }
-        .progress-bg { width: 100%; height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden; margin-bottom: 8px; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s ease-out; }
-        .progress-text { text-align: right; font-size: 13px; font-weight: bold; color: var(--primary); }
-        #status-msg { text-align: center; font-size: 14px; color: #666; margin-top: 5px; }
+        .prog-container { height: 6px; background: #eee; border-radius: 3px; margin-top: 15px; overflow: hidden; }
+        .prog-bar { height: 100%; background: #10b981; width: 0%; transition: width 0.3s; }
 
-        /* 결과 영역 (아코디언) */
-        #result-area { display: none; animation: slideUp 0.5s ease; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-        details { background: white; margin-bottom: 12px; border-radius: 12px; border: 1px solid #f1f3f5; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        summary { padding: 16px 20px; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: #fff; user-select: none; transition: background 0.2s; }
-        summary:hover { background: #f8f9fa; }
-
-        /* 헤더 색상 */
+        /* 결과 영역 */
+        details { background: white; margin-bottom: 10px; border-radius: 8px; border: 1px solid #eee; overflow: hidden; }
+        summary { padding: 14px; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; background: #fff; }
+        
         .head-issue { border-left: 5px solid #fa5252; color: #c92a2a; }
         .head-novel { border-left: 5px solid #4c6ef5; color: #364fc7; }
         .head-chat { border-left: 5px solid #868e96; color: #495057; }
-        .cnt { background: #f1f3f5; padding: 4px 10px; border-radius: 12px; font-size: 12px; color: #495057; }
 
-        /* 리스트 아이템 */
-        .item { padding: 12px 20px; border-top: 1px solid #f8f9fa; display: flex; align-items: center; font-size: 14px; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .item:hover { background: #f8f9fa; }
-        
-        .item-no { width: 80px; color: #adb5bd; font-size: 12px; font-family: monospace; }
-        .item-link { flex: 1; text-decoration: none; color: #212529; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 15px; }
-        .item-link:hover { text-decoration: underline; color: var(--primary); }
-        .item-reason { font-size: 12px; color: #495057; background: #e9ecef; padding: 4px 8px; border-radius: 6px; white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-        
-        /* 에러 박스 */
-        .error-log { color: #e03131; font-size: 12px; text-align: center; margin-top: 10px; display: none; }
+        .item { padding: 10px 15px; border-top: 1px solid #f1f3f5; display: flex; align-items: center; font-size: 13px; }
+        .item-no { width: 70px; color: #adb5bd; font-size: 11px; }
+        .item-link { flex: 1; text-decoration: none; color: #333; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px; }
+        .item-reason { font-size: 11px; background: #eee; padding: 2px 6px; border-radius: 4px; }
+
+        /* 디버그 로그 창 */
+        #debug-console { 
+            background: #1e1e1e; color: #00ff00; font-family: monospace; 
+            padding: 15px; border-radius: 8px; font-size: 12px; 
+            height: 150px; overflow-y: auto; margin-top: 20px; 
+            white-space: pre-wrap; border: 1px solid #333;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; margin-bottom:20px;">⚡ 노벨피아 심층 분석기</h2>
+    <h2 style="text-align:center;">⚡ 모니터링 시스템 (Debug Mode)</h2>
 
     <div class="control-box">
         <div class="input-group">
-            <input type="password" id="apiKey" placeholder="Gemini API Key 입력">
+            <input type="password" id="apiKey" placeholder="Gemini API Key">
         </div>
         <div class="input-group">
-            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744220)">
-            <input type="number" id="count" value="20" placeholder="수량 (20~30 권장)" style="flex:0.4;">
+            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744250)">
+            <input type="number" id="count" value="20" placeholder="수량" style="flex:0.4;">
         </div>
-        <button id="btnRun" onclick="startStream()">🚀 분석 시작</button>
-
-        <div class="progress-area" id="progArea">
-            <div class="progress-bg"><div class="progress-fill" id="progFill"></div></div>
-            <div style="display:flex; justify-content:space-between;">
-                <span id="status-msg">준비 중...</span>
-                <span class="progress-text" id="progText">0%</span>
-            </div>
-        </div>
-        <div id="errorLog" class="error-log"></div>
+        <button id="btnRun" onclick="startSystem()">🚀 분석 시작</button>
+        
+        <div class="prog-container"><div class="prog-bar" id="progBar"></div></div>
+        <div style="text-align:right; font-size:12px; margin-top:5px;" id="progText">0%</div>
     </div>
 
     <div id="result-area">
-        <details open>
-            <summary class="head-issue">
-                <span>🚨 이슈 / 불탐</span>
-                <span class="cnt" id="cnt-issue">0</span>
-            </summary>
-            <div id="list-issue"></div>
-        </details>
-
-        <details open>
-            <summary class="head-novel">
-                <span>📖 소설 / 추천</span>
-                <span class="cnt" id="cnt-novel">0</span>
-            </summary>
-            <div id="list-novel"></div>
-        </details>
-
-        <details>
-            <summary class="head-chat">
-                <span>💬 잡담 (일상/학교)</span>
-                <span class="cnt" id="cnt-chat">0</span>
-            </summary>
-            <div id="list-chat"></div>
-        </details>
+        <details open><summary class="head-issue"><span>🚨 이슈</span><span id="cnt-issue">0</span></summary><div id="list-issue"></div></details>
+        <details open><summary class="head-novel"><span>📖 소설</span><span id="cnt-novel">0</span></summary><div id="list-novel"></div></details>
+        <details><summary class="head-chat"><span>💬 잡담</span><span id="cnt-chat">0</span></summary><div id="list-chat"></div></details>
     </div>
+
+    <div id="debug-console">🖥️ 시스템 대기 중...</div>
 </div>
 
 <script>
     const PROXY_URL = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
 
-    async function startStream() {
+    // 화면에 로그 찍는 함수
+    function log(msg) {
+        const consoleBox = document.getElementById('debug-console');
+        const time = new Date().toLocaleTimeString();
+        consoleBox.innerHTML += `\n[${time}] ${msg}`;
+        consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+
+    async function startSystem() {
         const key = document.getElementById('apiKey').value.trim();
         const startNo = parseInt(document.getElementById('startNo').value);
         const totalCount = parseInt(document.getElementById('count').value);
         
-        const ui = {
-            btn: document.getElementById('btnRun'),
-            progArea: document.getElementById('progArea'),
-            progFill: document.getElementById('progFill'),
-            progText: document.getElementById('progText'),
-            status: document.getElementById('status-msg'),
-            error: document.getElementById('errorLog'),
-            result: document.getElementById('result-area'),
-            lists: {
-                issue: document.getElementById('list-issue'),
-                novel: document.getElementById('list-novel'),
-                chat: document.getElementById('list-chat')
-            },
-            cnts: {
-                issue: document.getElementById('cnt-issue'),
-                novel: document.getElementById('cnt-novel'),
-                chat: document.getElementById('cnt-chat')
-            }
-        };
-
-        if(!key || !startNo) return alert("API 키와 시작번호를 입력하세요.");
+        if(!key || !startNo) return alert("설정을 확인하세요.");
 
         // UI 초기화
-        ui.btn.disabled = true;
-        ui.error.style.display = 'none';
-        ui.error.innerText = '';
-        ui.result.style.display = 'block';
-        ui.progArea.style.display = 'block';
-        ui.progFill.style.width = '0%';
-        ui.progText.innerText = '0%';
-        Object.values(ui.lists).forEach(e => e.innerHTML = '');
-        Object.values(ui.cnts).forEach(e => e.innerText = '0');
-        
+        document.getElementById('btnRun').disabled = true;
+        document.getElementById('progBar').style.width = '0%';
+        ['list-issue','list-novel','list-chat'].forEach(id => document.getElementById(id).innerHTML = '');
+        ['cnt-issue','cnt-novel','cnt-chat'].forEach(id => document.getElementById(id).innerText = '0');
+        document.getElementById('debug-console').innerHTML = "🚀 프로세스 시작...";
+
         let counts = { issue: 0, novel: 0, chat: 0 };
-        const BATCH_SIZE = 5; // 5개씩 끊어서 처리 (체감 속도 향상)
+        const BATCH_SIZE = 5;
         let processed = 0;
 
         try {
-            // 전체 루프 (Batch 단위)
             for (let i = 0; i < totalCount; i += BATCH_SIZE) {
                 const currentBatchSize = Math.min(BATCH_SIZE, totalCount - i);
                 const currentStartNo = startNo - i;
-                // 이번 턴에 긁어올 번호들 (예: 100, 99, 98, 97, 96)
                 const batchIds = Array.from({length: currentBatchSize}, (_, idx) => currentStartNo - idx);
                 
-                ui.status.innerText = `데이터 수집 중... (${i+1}~${i+currentBatchSize}번째)`;
+                log(`[배치 시작] ${batchIds[0]} ~ ${batchIds[batchIds.length-1]} 데이터 수집 중...`);
 
-                // 1. 병렬 수집 (본문 포함)
+                // 1. 수집
                 const fetchPromises = batchIds.map(async (no) => {
                     try {
                         const targetUrl = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${no}`;
                         const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
                         const html = await resp.text();
                         
-                        // 삭제/존재하지 않음 체크
+                        // 디버깅: 내용이 너무 짧으면 차단/오류 의심
+                        if(html.length < 500) {
+                            return { error: `HTML 길이 부족 (${html.length})` };
+                        }
                         if(html.includes("존재하지 않습니다") || html.includes("삭제된 게시글")) return null;
 
                         const doc = new DOMParser().parseFromString(html, 'text/html');
                         const title = doc.querySelector('.title_subject')?.innerText.trim();
-                        // 본문 100자만 (속도 최적화)
                         const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 100) || "";
                         
                         if(title) return { no, title, body };
-                        return null;
-                    } catch(e) { return null; }
+                        return { error: "제목 파싱 실패" };
+                    } catch(e) { return { error: e.message }; }
                 });
 
                 const rawPosts = await Promise.all(fetchPromises);
-                const posts = rawPosts.filter(p => p !== null);
-
-                // 수집된 글이 있으면 분석 시작
-                if (posts.length > 0) {
-                    ui.status.innerText = `🧠 Gemini 분석 중...`;
+                
+                // 수집 결과 로그 확인
+                const validPosts = rawPosts.filter(p => p && p.no);
+                const errors = rawPosts.filter(p => p && p.error);
+                
+                log(`>> 수집 완료: 성공 ${validPosts.length}건 / 실패 ${errors.length}건 / 삭제 ${rawPosts.filter(p=>p===null).length}건`);
+                
+                if (validPosts.length > 0) {
+                    log(`>> AI 분석 요청 중... (${validPosts.length}건)`);
                     
-                    // 2. AI 분석 요청
                     const MODEL_NAME = "gemini-2.0-flash-exp"; 
                     const prompt = `
-                    Analyze these posts (Title+Body).
-                    
-                    [Rules]
-                    1. 'issue': STRICTLY for 'Novelpia' platform bugs, billing, operational complaints.
-                    2. 'novel': Novel reviews, recommendations.
-                    3. 'chat': **Student council, School, Daily life, Embarrassing moments, Food** (MUST be 'chat').
-                    
-                    [Output]
-                    JSON Only: {"results": {"ID": {"c": "issue/novel/chat", "r": "Korean short reason"}}}
-                    
-                    [Data]
-                    ${posts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body.replace(/\n/g, ' ')}`).join('\n')}
+                    Analyze posts. Rules:
+                    1. 'issue': Novelpia platform bugs/complaints ONLY.
+                    2. 'novel': Review/Recs.
+                    3. 'chat': School, Student Council, Daily life = Chat.
+                    Output JSON Only: {"results": {"ID": {"c": "issue/novel/chat", "r": "Korean reason"}}}
+                    Data:
+                    ${validPosts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body.replace(/\n/g, ' ')}`).join('\n')}
                     `;
 
                     try {
@@ -209,26 +155,23 @@
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                         });
-
+                        
                         const aiData = await aiResp.json();
                         
-                        if (aiData.error) {
-                            console.error(aiData.error);
-                            ui.error.style.display = 'block';
-                            ui.error.innerText += ` [${i+1}구간 API 오류] `;
+                        if(aiData.error) {
+                            log(`❌ API 에러: ${aiData.error.message}`);
                         } else {
-                            // JSON 파싱 안전장치
                             let rawText = aiData.candidates[0].content.parts[0].text;
-                            // 마크다운 제거
-                            rawText = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-                            // 혹시 모를 앞뒤 공백 제거 후 파싱
+                            rawText = rawText.replace(/```json|```/g, "").trim();
                             const resData = JSON.parse(rawText);
+                            
+                            log(`>> AI 응답 수신 성공. 리스트 갱신.`);
 
-                            // 3. UI 갱신 (스트리밍)
-                            posts.forEach(p => {
-                                const info = resData.results[p.no] || { c: 'chat', r: '분석실패' };
+                            // 결과 뿌리기 (강제 렌더링)
+                            validPosts.forEach(p => {
+                                // AI가 응답을 안 줬어도 강제로 'chat'으로라도 띄움 (증발 방지)
+                                const info = resData.results[p.no] || { c: 'chat', r: 'AI응답없음' };
                                 let cat = info.c;
-                                // 안전장치: 이상한 카테고리는 잡담으로
                                 if(!['issue', 'novel', 'chat'].includes(cat)) cat = 'chat';
 
                                 counts[cat]++;
@@ -240,36 +183,33 @@
                                     <a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a>
                                     <span class="item-reason">${info.r}</span>
                                 `;
-                                ui.lists[cat].appendChild(div);
+                                document.getElementById(`list-${cat}`).appendChild(div);
                             });
 
-                            // 카운트 업데이트
-                            ui.cnts.issue.innerText = counts.issue;
-                            ui.cnts.novel.innerText = counts.novel;
-                            ui.cnts.chat.innerText = counts.chat;
+                            // 카운트 갱신
+                            document.getElementById('cnt-issue').innerText = counts.issue;
+                            document.getElementById('cnt-novel').innerText = counts.novel;
+                            document.getElementById('cnt-chat').innerText = counts.chat;
                         }
-                    } catch (err) {
-                        console.error("AI 파싱 실패", err);
+                    } catch(err) {
+                        log(`❌ 파싱/네트워크 오류: ${err.message}`);
                     }
+                } else {
+                    log(`⚠️ 분석할 유효한 게시물이 없습니다. (모두 삭제되었거나 파싱 실패)`);
                 }
 
-                // 진행률 업데이트
                 processed += currentBatchSize;
                 const percent = Math.min(100, Math.round((processed / totalCount) * 100));
-                ui.progFill.style.width = `${percent}%`;
-                ui.progText.innerText = `${percent}%`;
+                document.getElementById('progBar').style.width = `${percent}%`;
+                document.getElementById('progText').innerText = `${percent}%`;
             }
 
-            ui.status.innerText = "✅ 모든 작업 완료!";
-            ui.progFill.style.background = "#10b981"; // 초록색 완료
+            log("✅ 모든 작업 완료.");
 
         } catch (e) {
-            console.error(e);
-            ui.status.innerText = "❌ 중단됨";
-            ui.error.style.display = 'block';
-            ui.error.innerText = e.message;
+            log(`❌ 치명적 오류: ${e.message}`);
         } finally {
-            ui.btn.disabled = false;
+            document.getElementById('btnRun').disabled = false;
         }
     }
 </script>
