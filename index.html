@@ -2,34 +2,29 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>갤러리 인사이트 모니터 (v2.5)</title>
+    <title>장갤 모니터링</title>
     <style>
         :root { --primary: #6200ea; --bg: #f3f4f6; --surface: #ffffff; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif; background: var(--bg); color: #1f2937; margin: 0; padding: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
         
-        /* 컨트롤 박스 */
         .control-panel { background: var(--surface); padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 24px; }
         .input-group { display: flex; gap: 12px; margin-bottom: 16px; }
-        input { flex: 1; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; transition: border 0.2s; }
-        input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(98, 0, 234, 0.1); }
+        input { flex: 1; padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 15px; }
+        input:focus { outline: none; border-color: var(--primary); }
         
-        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; transition: transform 0.1s; }
-        button:active { transform: scale(0.98); }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; }
         button:disabled { background: #d1d5db; cursor: not-allowed; }
 
-        /* 상태창 & 에러 */
         #status-msg { text-align: center; font-weight: 600; color: var(--primary); margin: 16px 0; min-height: 24px; }
-        .error-box { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; line-height: 1.5; }
+        .error-box { background: #fee2e2; color: #991b1b; padding: 12px; border-radius: 8px; font-size: 14px; margin-top: 12px; display: none; }
 
-        /* 결과 테이블 */
         .result-box { background: var(--surface); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: none; }
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
         th { background: #f9fafb; padding: 16px; text-align: left; font-weight: 600; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
         td { padding: 14px 16px; border-bottom: 1px solid #f3f4f6; vertical-align: middle; }
         tr:hover { background: #f9fafb; }
         
-        /* 뱃지 */
         .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
         .tag-issue { background: #fecaca; color: #991b1b; }
         .tag-novel { background: #bfdbfe; color: #1e40af; }
@@ -37,16 +32,13 @@
         
         .link { color: #111827; text-decoration: none; font-weight: 500; display: block; max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .link:hover { color: var(--primary); text-decoration: underline; }
-        .comment { color: #6b7280; font-size: 13px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="margin: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            ⚡ 갤러리 모니터 <span style="font-size: 12px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #555;">v2.5 Flash</span>
-        </h2>
+        <h2 style="margin: 0;">⚡ 갤러리 모니터 (공지 제외)</h2>
     </div>
 
     <div class="control-panel">
@@ -57,7 +49,7 @@
             <input type="number" id="startNo" placeholder="시작 번호 (예: 11744142)">
             <input type="number" id="count" value="20" placeholder="수량" style="flex: 0.4;">
         </div>
-        <button id="btnRun" onclick="startEngine()">Gemini 2.5 분석 시작</button>
+        <button id="btnRun" onclick="startEngine()">분석 시작</button>
         <div id="errorBox" class="error-box"></div>
     </div>
 
@@ -68,8 +60,8 @@
             <thead>
                 <tr>
                     <th width="10%">No</th>
-                    <th width="12%">분류</th>
-                    <th width="48%">제목</th>
+                    <th width="15%">분류</th>
+                    <th width="45%">제목</th>
                     <th width="30%">AI 요약</th>
                 </tr>
             </thead>
@@ -79,7 +71,6 @@
 </div>
 
 <script>
-    // 사용자 Worker 프록시
     const PROXY_URL = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
 
     async function startEngine() {
@@ -95,23 +86,19 @@
             tbody: document.getElementById('resultBody')
         };
 
-        if(!key || !startNo) {
-            alert("API 키와 시작 번호를 입력해주세요.");
-            return;
-        }
+        if(!key || !startNo) return alert("API 키와 시작 번호를 입력해주세요.");
 
-        // UI 리셋
         ui.btn.disabled = true;
         ui.error.style.display = 'none';
         ui.result.style.display = 'none';
         ui.tbody.innerHTML = '';
-        ui.status.innerText = "🚀 리스트 고속 수집 중...";
+        ui.status.innerText = "🚀 데이터 수집 및 정렬 중...";
 
         try {
-            // 1. 목록 페이지 통째로 긁어오기 (속도 10배 향상)
+            // 1. 목록 페이지 가져오기
             const target = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
             const resp = await fetch(PROXY_URL + encodeURIComponent(target));
-            if(!resp.ok) throw new Error("프록시 서버 접속 실패");
+            if(!resp.ok) throw new Error("서버 연결 실패");
             
             const html = await resp.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -121,33 +108,46 @@
             rows.forEach(row => {
                 const numNode = row.querySelector('.gall_num');
                 const titleNode = row.querySelector('.gall_tit a');
+                
+                // 공지, 설문, 이슈 등으로 적힌 글은 번호 파싱에서 NaN이 나오거나
+                // 번호가 있어도 옛날 번호일 확률이 높음
                 if(numNode && titleNode) {
-                    const no = parseInt(numNode.innerText);
+                    const noText = numNode.innerText.trim();
+                    const no = parseInt(noText);
                     const title = titleNode.innerText.trim();
-                    // 유효한 번호이고, 시작번호보다 작거나 같을 때 수집
-                    if(!isNaN(no) && no <= startNo) posts.push({ no, title });
+
+                    // '공지', '설문' 등 한글로 된 번호는 제외
+                    if(!isNaN(no)) {
+                        posts.push({ no, title });
+                    }
                 }
             });
 
-            // 개수 제한
-            posts = posts.slice(0, count);
+            // 2. [핵심 수정] 번호 내림차순 정렬 (큰 번호 -> 작은 번호)
+            // 이렇게 하면 옛날 번호인 공지사항들은 맨 밑바닥으로 내려갑니다.
+            posts.sort((a, b) => b.no - a.no);
 
-            if(posts.length === 0) throw new Error(`${startNo}번 이하 게시물을 찾을 수 없습니다. (페이지가 밀렸을 수 있음)`);
+            // 3. 시작 번호보다 작거나 같은 것만 필터링
+            // (혹시 모를 미래의 글이나 핀 고정글 방지)
+            const filteredPosts = posts.filter(p => p.no <= startNo);
 
-            // 2. Gemini 2.5 Flash 호출
-            ui.status.innerText = `🧠 Gemini 2.5 Flash 분석 중 (${posts.length}건)...`;
+            // 4. 원하는 개수만큼 자르기
+            const finalPosts = filteredPosts.slice(0, count);
 
-            // 요청하신 2.5 모델명 적용
+            if(finalPosts.length === 0) throw new Error(`${startNo}번 근처의 게시물을 찾을 수 없습니다.`);
+
+            // 5. AI 분석 (Gemini 2.5 Flash)
+            ui.status.innerText = `🧠 Gemini 2.5 Flash 분석 중 (${finalPosts.length}건)...`;
+
             const MODEL_NAME = "gemini-2.5-flash"; 
-
             const prompt = `
-            Analyze these titles from a web novel community.
-            Classify them into: 'issue' (Bugs, Complaints, Controversy), 'novel' (Review, Recommendation, Chat), 'chat' (General).
-            Provide a short reason in Korean.
-            Output JSON only: {"results": { "POST_ID": {"cat": "code", "reason": "text"} }}
+            Analyze these web novel community titles.
+            Classify: 'issue' (Bug, Complaint, Controversy), 'novel' (Review, Chat, Rec), 'chat' (General).
+            Provide short Korean reason.
+            JSON Only: {"results": { "POST_ID": {"cat": "code", "reason": "text"} }}
             
             Titles:
-            ${posts.map(p => `${p.no}: ${p.title}`).join('\n')}
+            ${finalPosts.map(p => `${p.no}: ${p.title}`).join('\n')}
             `;
 
             const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
@@ -157,23 +157,13 @@
             });
 
             const aiData = await aiResp.json();
+            if(aiData.error) throw new Error(aiData.error.message);
 
-            // 에러 핸들링 (모델명이 틀렸거나 없는 경우)
-            if(aiData.error) {
-                let msg = aiData.error.message;
-                if(msg.includes("not found")) {
-                    msg += `<br>⚠️ <b>팁:</b> 'gemini-2.5-flash'가 아직 배포되지 않았거나 API 이름이 다를 수 있습니다. (현재 2.0-flash 사용 권장)`;
-                }
-                throw new Error(msg);
-            }
-
-            // 결과 파싱
             const rawText = aiData.candidates[0].content.parts[0].text;
-            const jsonText = rawText.replace(/```json|```/g, "").trim();
-            const resultData = JSON.parse(jsonText);
+            const resultData = JSON.parse(rawText.replace(/```json|```/g, "").trim());
 
-            // 3. 화면 출력
-            posts.forEach(p => {
+            // 6. 결과 출력
+            finalPosts.forEach(p => {
                 const info = resultData.results[p.no] || { cat: 'chat', reason: '-' };
                 
                 const tr = document.createElement('tr');
@@ -185,7 +175,7 @@
                     <td style="color:#999;">${p.no}</td>
                     <td>${badge}</td>
                     <td><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="link">${p.title}</a></td>
-                    <td class="comment">${info.reason}</td>
+                    <td style="color:#666; font-size:13px;">${info.reason}</td>
                 `;
                 ui.tbody.appendChild(tr);
             });
@@ -195,14 +185,13 @@
 
         } catch (e) {
             console.error(e);
-            ui.status.innerText = "❌ 분석 중단";
-            ui.error.innerHTML = `<b>오류 발생:</b> ${e.message}`;
+            ui.status.innerText = "❌ 중단됨";
+            ui.error.innerHTML = `오류: ${e.message}`;
             ui.error.style.display = 'block';
         } finally {
             ui.btn.disabled = false;
         }
     }
 </script>
-
 </body>
 </html>
