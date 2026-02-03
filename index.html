@@ -87,34 +87,57 @@
     }
 
 async function getLatestNo() {
-        log("🔍 장갤 목록 접속 중... (최신 번호 추출)");
+        log("🔍 장갤 최신글 번호 강제 추출 시도...");
         try {
             const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
             const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
             const html = await resp.text();
-            const doc = new DOMParser().parseFromString(html, 'text/html');
             
-            // 모든 게시글 행을 가져옴
-            const rows = doc.querySelectorAll('.ub-content.us-post');
-            
-            for(let row of rows) {
-                // '공지'라고 적힌 엘리먼트가 있는지 확인
-                const isNotice = row.querySelector('.gall_num').innerText.includes('공지');
-                const no = parseInt(row.querySelector('.gall_num').innerText);
+            // 방법 1: 정규식으로 1100만~1200만 사이의 숫자들 싹 다 긁기
+            // 디시 글 번호는 현재 11,xxx,xxx 형식이므로 이를 타겟팅합니다.
+            const noMatch = html.match(/(\d{8})/g); 
 
-                // 숫자가 맞고, 공지가 아니며, 너무 작은 번호(옛날공지)가 아닌 첫 번째 글 선택
-                if(!isNaN(no) && !isNotice && no > 10000000) { 
-                    log(`✅ 최신글 번호 감지 성공: ${no}`);
-                    return no; 
+            if (noMatch && noMatch.length > 0) {
+                // 숫자들 중 공지사항(보통 100만~900만)을 제외하고 11,000,000 이상인 것들만 필터링
+                const numbers = noMatch
+                    .map(n => parseInt(n))
+                    .filter(n => n > 11000000 && n < 20000000); // 1,100만 ~ 2,000만 사이
+
+                if (numbers.length > 0) {
+                    const latest = Math.max(...numbers);
+                    log(`✅ 강제 추출 성공: ${latest}`);
+                    return latest;
                 }
             }
-            throw new Error("유효한 일반글 번호를 찾지 못했습니다.");
+
+            // 방법 2: 정규식 실패 시 기존 DOM 파싱 보강형 시도
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            const links = Array.from(doc.querySelectorAll('a[href*="no="]'));
+            let maxFound = 0;
+
+            links.forEach(a => {
+                const m = a.href.match(/no=(\d+)/);
+                if (m) {
+                    const num = parseInt(m[1]);
+                    if (num > 11000000 && num < 20000000 && num > maxFound) {
+                        maxFound = num;
+                    }
+                }
+            });
+
+            if (maxFound > 0) {
+                log(`✅ 링크 분석 성공: ${maxFound}`);
+                return maxFound;
+            }
+
+            throw new Error("페이지에서 글 번호를 찾을 수 없음");
+
         } catch(e) { 
-            log("❌ 최신 번호 가져오기 실패: " + e.message); 
+            log("❌ 최신 번호 추출 실패: " + e.message); 
+            log("💡 팁: 디시가 접속을 막았을 수 있습니다. 잠시 후 시도하거나 수동 입력하세요.");
             return null; 
         }
     }
-
     async function startMonitor() {
         const key = document.getElementById('apiKey').value.trim();
         const autoMode = document.getElementById('autoLatest').checked;
