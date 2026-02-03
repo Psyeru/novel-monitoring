@@ -2,86 +2,83 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>갤러리 딥 모니터</title>
+    <title>노벨피아 심층 모니터</title>
     <style>
-        :root { --primary: #6200ea; --bg: #f4f6f8; --surface: #ffffff; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif; background: var(--bg); color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 700px; margin: 0 auto; }
-        
-        /* 컨트롤 패널 */
-        .control-panel { background: var(--surface); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 12px; }
-        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
-        input:focus { outline: none; border-color: var(--primary); }
-        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        button:disabled { background: #cbd5e1; cursor: wait; }
+        :root { --primary: #5a2df2; --bg: #f4f6f8; --white: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
 
-        #status-msg { text-align: center; font-size: 14px; color: var(--primary); font-weight: 600; margin: 10px 0; min-height: 20px; }
-        
+        /* 컨트롤 패널 */
+        .control-box { background: var(--white); padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .input-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        button:disabled { background: #ccc; }
+
+        #status { text-align: center; margin: 15px 0; font-weight: 600; color: var(--primary); min-height: 24px; }
+
         /* 아코디언 UI */
-        details { background: white; margin-bottom: 10px; border-radius: 8px; overflow: hidden; border: 1px solid #eee; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-        summary { padding: 12px 16px; cursor: pointer; font-weight: 700; font-size: 15px; display: flex; justify-content: space-between; align-items: center; background: #fff; transition: background 0.2s; user-select: none; }
+        details { background: white; margin-bottom: 10px; border-radius: 8px; border: 1px solid #eee; overflow: hidden; }
+        summary { padding: 15px; cursor: pointer; font-weight: 700; display: flex; justify-content: space-between; align-items: center; background: #fff; user-select: none; }
         summary:hover { background: #f9f9f9; }
-        
-        /* 카테고리별 헤더 색상 */
-        .head-issue { border-left: 4px solid #ef4444; color: #b91c1c; }
-        .head-novel { border-left: 4px solid #3b82f6; color: #1d4ed8; }
-        .head-chat { border-left: 4px solid #9ca3af; color: #4b5563; }
-        
-        /* 뱃지 */
-        .cnt-badge { font-size: 12px; background: #eee; padding: 2px 8px; border-radius: 12px; color: #555; font-weight: normal; }
+
+        /* 카테고리 스타일 */
+        .head-issue { border-left: 5px solid #e53e3e; color: #c53030; } /* 이슈 */
+        .head-novel { border-left: 5px solid #3182ce; color: #2b6cb0; } /* 소설 */
+        .head-chat { border-left: 5px solid #a0aec0; color: #4a5568; } /* 잡담 */
+
+        .cnt { background: #eee; padding: 2px 8px; border-radius: 10px; font-size: 12px; color: #555; }
 
         /* 리스트 아이템 */
-        .list-box { border-top: 1px solid #f0f0f0; }
-        .item { display: flex; padding: 10px 16px; border-bottom: 1px solid #f5f5f5; align-items: center; font-size: 13px; }
-        .item:last-child { border-bottom: none; }
-        .item-no { color: #aaa; width: 70px; font-size: 12px; }
-        .item-link { flex: 1; text-decoration: none; color: #333; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
+        .item { padding: 12px 15px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; font-size: 13px; }
+        .item:hover { background: #fafafa; }
+        .item-no { width: 80px; color: #999; font-size: 12px; }
+        .item-link { flex: 1; text-decoration: none; color: #333; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
         .item-link:hover { text-decoration: underline; color: var(--primary); }
-        .item-reason { background: #f8f9fa; color: #666; padding: 2px 6px; border-radius: 4px; font-size: 11px; white-space: nowrap; }
+        .item-reason { font-size: 11px; color: #666; background: #f0f0f0; padding: 3px 6px; border-radius: 4px; white-space: nowrap; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; margin:0 0 20px 0;">⚡ 갤러리 딥 모니터</h2>
+    <h2 style="text-align:center; margin-bottom:20px;">⚡ 노벨피아 심층 분석기</h2>
 
-    <div class="control-panel">
-        <div class="input-group">
+    <div class="control-box">
+        <div class="input-row">
             <input type="password" id="apiKey" placeholder="Gemini API Key">
         </div>
-        <div class="input-group">
-            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744000)">
-            <input type="number" id="count" value="20" placeholder="수량" style="flex:0.4;">
+        <div class="input-row">
+            <input type="number" id="startNo" placeholder="시작 번호 (예: 11744200)">
+            <input type="number" id="count" value="20" placeholder="개수 (최대 30)" style="flex:0.4;">
         </div>
-        <button id="btnRun" onclick="startProcess()">모니터링 시작</button>
+        <button id="btnRun" onclick="startDeepScan()">🔍 본문 포함 정밀 분석 시작</button>
     </div>
 
-    <div id="status-msg">준비 완료</div>
+    <div id="status">준비 완료</div>
 
     <div id="result-area" style="display:none;">
         <details open>
             <summary class="head-issue">
-                <span>🚨 이슈 / 불탐</span>
-                <span class="cnt-badge" id="cnt-issue">0</span>
+                <span>🚨 노벨피아 불만/이슈</span>
+                <span class="cnt" id="cnt-issue">0</span>
             </summary>
-            <div class="list-box" id="list-issue"></div>
+            <div id="list-issue"></div>
         </details>
 
         <details open>
             <summary class="head-novel">
-                <span>📖 소설 / 추천</span>
-                <span class="cnt-badge" id="cnt-novel">0</span>
+                <span>📖 소설 감상/추천</span>
+                <span class="cnt" id="cnt-novel">0</span>
             </summary>
-            <div class="list-box" id="list-novel"></div>
+            <div id="list-novel"></div>
         </details>
 
         <details>
             <summary class="head-chat">
-                <span>💬 잡담 / 기타</span>
-                <span class="cnt-badge" id="cnt-chat">0</span>
+                <span>💬 일반 잡담</span>
+                <span class="cnt" id="cnt-chat">0</span>
             </summary>
-            <div class="list-box" id="list-chat"></div>
+            <div id="list-chat"></div>
         </details>
     </div>
 </div>
@@ -89,14 +86,14 @@
 <script>
     const PROXY_URL = "https://bold-snowflake-1782.syeru1209.workers.dev/?url=";
 
-    async function startProcess() {
+    async function startDeepScan() {
         const key = document.getElementById('apiKey').value.trim();
         const startNo = parseInt(document.getElementById('startNo').value);
-        const targetCount = parseInt(document.getElementById('count').value);
+        const count = parseInt(document.getElementById('count').value);
         
         const ui = {
             btn: document.getElementById('btnRun'),
-            status: document.getElementById('status-msg'),
+            status: document.getElementById('status'),
             result: document.getElementById('result-area'),
             lists: {
                 issue: document.getElementById('list-issue'),
@@ -110,98 +107,65 @@
             }
         };
 
-        if(!key || !startNo) return alert("키와 시작번호를 입력하세요.");
+        if(!key || !startNo) return alert("API 키와 시작번호를 입력하세요.");
 
         // 초기화
         ui.btn.disabled = true;
         ui.result.style.display = 'none';
         Object.values(ui.lists).forEach(e => e.innerHTML = '');
         Object.values(ui.cnts).forEach(e => e.innerText = '0');
-        
-        let collectedPosts = [];
-        let currentPage = 1;
-        
+
         try {
-            // ==========================================
-            // 1. 페이지 순회하며 데이터 찾기 (Page Walker)
-            // ==========================================
-            ui.status.innerText = "📡 데이터 추적 중 (페이지 스캔)...";
+            // 1. 병렬 데이터 수집 (본문 포함)
+            ui.status.innerText = `📡 게시물 ${count}개 본문 수집 중...`;
 
-            while (collectedPosts.length < targetCount) {
-                // 페이지 안전장치 (너무 많이 뒤지지 않도록)
-                if (currentPage > 10) break; 
+            // 요청할 번호 리스트 생성 (Start ~ Start-count)
+            const targetIds = Array.from({length: count}, (_, i) => startNo - i);
 
-                const targetUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=${currentPage}`;
-                const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
-                const html = await resp.text();
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
-                
-                // 페이지 내 게시물이 없으면 종료
-                if (rows.length === 0) break;
+            // Promise.all로 동시에 긁어옴 (본문 수집 속도 최적화)
+            const fetchPromises = targetIds.map(async (no) => {
+                try {
+                    const targetUrl = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${no}`;
+                    const resp = await fetch(PROXY_URL + encodeURIComponent(targetUrl));
+                    const html = await resp.text();
+                    
+                    // 삭제된 글 체크
+                    if(html.includes("존재하지 않습니다") || html.includes("삭제된 게시글")) return null;
 
-                let postsOnPage = [];
-                rows.forEach(row => {
-                    const numNode = row.querySelector('.gall_num');
-                    const titleNode = row.querySelector('.gall_tit a');
-                    if(numNode && titleNode) {
-                        const no = parseInt(numNode.innerText);
-                        const title = titleNode.innerText.trim();
-                        if(!isNaN(no)) postsOnPage.push({ no, title });
-                    }
-                });
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const title = doc.querySelector('.title_subject')?.innerText.trim();
+                    // 본문 추출 (글 내용)
+                    const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 300) || ""; // 300자만 끊음
 
-                // 내림차순 정렬 (최신순)
-                postsOnPage.sort((a,b) => b.no - a.no);
+                    if(title) return { no, title, body };
+                    return null;
+                } catch(e) { return null; }
+            });
 
-                // 현재 페이지의 가장 작은 번호 확인
-                const minOnPage = postsOnPage[postsOnPage.length - 1].no;
-                const maxOnPage = postsOnPage[0].no;
+            const rawResults = await Promise.all(fetchPromises);
+            const posts = rawResults.filter(p => p !== null); // null 제거
 
-                // [로직]
-                // 1. 만약 시작번호가 현재 페이지 범위 안에 있거나, 현재 페이지보다 더 옛날(작은) 번호라면 수집 시도
-                // 2. 만약 시작번호가 현재 페이지 Max보다 훨씬 크면? (이미 지나간 페이지) -> 그럴일은 없음(1페이지부터 하니까)
-                
-                // 타겟 번호가 이 페이지에 있거나, 이 페이지보다 더 과거에 있다면
-                if (startNo >= minOnPage) {
-                    for (let p of postsOnPage) {
-                        // 시작 번호보다 작거나 같은 것만 수집
-                        if (p.no <= startNo) {
-                            collectedPosts.push(p);
-                            if (collectedPosts.length >= targetCount) break;
-                        }
-                    }
-                }
+            if(posts.length === 0) throw new Error("수집된 게시물이 없습니다 (모두 삭제되었거나 오류).");
 
-                // 목표 다 채웠으면 탈출
-                if (collectedPosts.length >= targetCount) break;
-
-                // 아직 못 채웠는데, 시작 번호가 이 페이지의 최소값보다 작다면? -> 다음 페이지로 가야 함
-                if (startNo < minOnPage) {
-                    currentPage++;
-                    continue; 
-                }
-
-                // 현재 페이지를 다 훑었는데도 부족하면 다음 페이지
-                currentPage++;
-            }
-
-            if (collectedPosts.length === 0) throw new Error("게시물을 찾을 수 없습니다. 번호를 확인해주세요.");
-
-            // ==========================================
-            // 2. AI 분석 (Gemini 2.5 Flash)
-            // ==========================================
-            ui.status.innerText = `🧠 AI 분석 중 (${collectedPosts.length}건)...`;
+            // 2. AI 정밀 분석 (Gemini 2.5 Flash)
+            ui.status.innerText = `🧠 본문 기반 정밀 분석 중 (${posts.length}건)...`;
 
             const MODEL_NAME = "gemini-2.5-flash"; 
             
-            // 팁: AI에게 줄 때 번호만 주지 말고 제목만 깔끔하게 줘서 토큰 아끼기
+            // 프롬프트: '이슈'의 정의를 노벨피아 관련으로 한정 + 본문(Body) 참고 지시
             const prompt = `
-            Classify these posts: 'issue' (controversy, complaints), 'novel' (review, recs), 'chat' (others).
-            Output JSON: {"results": {"ID": {"c": "issue/novel/chat", "r": "short reason"}}}
+            Analyze these community posts (Title + Body text).
             
-            Data:
-            ${collectedPosts.map(p => `${p.no}:${p.title}`).join('\n')}
+            [Classification Rules]
+            1. 'issue': STRICTLY for complaints about 'Novelpia' (Platform errors, System bugs, Billing, Company policy, Swearing at the site). If the subject is missing in the title, check the Body.
+            2. 'novel': Novel reviews, recommendations, or discussing story content.
+            3. 'chat': General chat, fights between users, or other topics not related to Novelpia platform issues.
+
+            [Output Format]
+            JSON Only: {"results": {"ID": {"cat": "issue/novel/chat", "reason": "Short Korean reason"}}}
+
+            [Data]
+            ${posts.map(p => `ID:${p.no} | Title:${p.title} | Body:${p.body.replace(/\n/g, ' ')}`).join('\n')}
             `;
 
             const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
@@ -216,34 +180,35 @@
             const rawText = aiData.candidates[0].content.parts[0].text;
             const resData = JSON.parse(rawText.replace(/```json|```/g, "").trim());
 
-            // ==========================================
-            // 3. 결과 렌더링 (아코디언 분류)
-            // ==========================================
+            // 3. 결과 배치
             let counts = { issue: 0, novel: 0, chat: 0 };
 
-            collectedPosts.forEach(p => {
-                const item = resData.results[p.no] || { c: 'chat', r: '-' };
-                let cat = item.c;
-                if(!['issue', 'novel', 'chat'].includes(cat)) cat = 'chat'; // 안전장치
+            // 순서 보장을 위해 posts 배열 순회
+            posts.forEach(p => {
+                const info = resData.results[p.no] || { cat: 'chat', reason: '분석불가' };
+                let category = info.cat;
+                if(!counts.hasOwnProperty(category)) category = 'chat';
 
-                counts[cat]++;
+                counts[category]++;
 
                 const div = document.createElement('div');
                 div.className = 'item';
                 div.innerHTML = `
                     <span class="item-no">${p.no}</span>
                     <a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a>
-                    <span class="item-reason">${item.r}</span>
+                    <span class="item-reason">${info.reason}</span>
                 `;
-                ui.lists[cat].appendChild(div);
+                
+                ui.lists[category].appendChild(div);
             });
 
+            // 카운트 적용
             ui.cnts.issue.innerText = counts.issue;
             ui.cnts.novel.innerText = counts.novel;
             ui.cnts.chat.innerText = counts.chat;
 
             ui.result.style.display = 'block';
-            ui.status.innerText = "✅ 완료";
+            ui.status.innerText = "✅ 분석 완료";
 
         } catch (e) {
             console.error(e);
