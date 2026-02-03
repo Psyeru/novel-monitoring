@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>장갤 모니터링</title>
+    <title>갤러리 모니터 (범위 필터 적용)</title>
     <style>
         :root { --primary: #6200ea; --bg: #f3f4f6; --surface: #ffffff; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Pretendard", Roboto, sans-serif; background: var(--bg); color: #1f2937; margin: 0; padding: 20px; }
@@ -38,7 +38,7 @@
 
 <div class="container">
     <div style="text-align: center; margin-bottom: 24px;">
-        <h2 style="margin: 0;">⚡ 갤러리 모니터 (공지 제외)</h2>
+        <h2 style="margin: 0;">⚡ 갤러리 모니터 (범위 지정)</h2>
     </div>
 
     <div class="control-panel">
@@ -92,10 +92,10 @@
         ui.error.style.display = 'none';
         ui.result.style.display = 'none';
         ui.tbody.innerHTML = '';
-        ui.status.innerText = "🚀 데이터 수집 및 정렬 중...";
+        ui.status.innerText = "🚀 데이터 수집 중...";
 
         try {
-            // 1. 목록 페이지 가져오기
+            // 1. 목록 페이지 가져오기 (List 1페이지 수집)
             const target = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
             const resp = await fetch(PROXY_URL + encodeURIComponent(target));
             if(!resp.ok) throw new Error("서버 연결 실패");
@@ -105,39 +105,33 @@
             const rows = Array.from(doc.querySelectorAll('.ub-content.us-post'));
             
             let posts = [];
+            // 말씀하신 범위 계산: (시작번호 - 개수) < X <= 시작번호
+            // 예: 100번부터 5개면 -> 96, 97, 98, 99, 100 (95 초과 100 이하)
+            const minNo = startNo - count;
+
             rows.forEach(row => {
                 const numNode = row.querySelector('.gall_num');
                 const titleNode = row.querySelector('.gall_tit a');
                 
-                // 공지, 설문, 이슈 등으로 적힌 글은 번호 파싱에서 NaN이 나오거나
-                // 번호가 있어도 옛날 번호일 확률이 높음
                 if(numNode && titleNode) {
                     const noText = numNode.innerText.trim();
                     const no = parseInt(noText);
                     const title = titleNode.innerText.trim();
 
-                    // '공지', '설문' 등 한글로 된 번호는 제외
                     if(!isNaN(no)) {
-                        posts.push({ no, title });
+                        // [핵심 로직] 사용자님이 말씀하신 수식 적용
+                        // 공지사항(900만 번호)은 minNo보다 훨씬 작으므로 여기서 무조건 탈락함.
+                        if (no <= startNo && no > minNo) {
+                            posts.push({ no, title });
+                        }
                     }
                 }
             });
 
-            // 2. [핵심 수정] 번호 내림차순 정렬 (큰 번호 -> 작은 번호)
-            // 이렇게 하면 옛날 번호인 공지사항들은 맨 밑바닥으로 내려갑니다.
-            posts.sort((a, b) => b.no - a.no);
+            if(posts.length === 0) throw new Error(`${startNo}번 ~ ${minNo}번 사이의 게시물을 찾을 수 없습니다. (페이지가 넘어갔을 수 있음)`);
 
-            // 3. 시작 번호보다 작거나 같은 것만 필터링
-            // (혹시 모를 미래의 글이나 핀 고정글 방지)
-            const filteredPosts = posts.filter(p => p.no <= startNo);
-
-            // 4. 원하는 개수만큼 자르기
-            const finalPosts = filteredPosts.slice(0, count);
-
-            if(finalPosts.length === 0) throw new Error(`${startNo}번 근처의 게시물을 찾을 수 없습니다.`);
-
-            // 5. AI 분석 (Gemini 2.5 Flash)
-            ui.status.innerText = `🧠 Gemini 2.5 Flash 분석 중 (${finalPosts.length}건)...`;
+            // 2. AI 분석 (Gemini 2.5 Flash)
+            ui.status.innerText = `🧠 Gemini 2.5 Flash 분석 중 (${posts.length}건)...`;
 
             const MODEL_NAME = "gemini-2.5-flash"; 
             const prompt = `
@@ -147,7 +141,7 @@
             JSON Only: {"results": { "POST_ID": {"cat": "code", "reason": "text"} }}
             
             Titles:
-            ${finalPosts.map(p => `${p.no}: ${p.title}`).join('\n')}
+            ${posts.map(p => `${p.no}: ${p.title}`).join('\n')}
             `;
 
             const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${key}`, {
@@ -162,8 +156,11 @@
             const rawText = aiData.candidates[0].content.parts[0].text;
             const resultData = JSON.parse(rawText.replace(/```json|```/g, "").trim());
 
-            // 6. 결과 출력
-            finalPosts.forEach(p => {
+            // 3. 결과 출력
+            // 번호 내림차순 정렬해서 보여주기
+            posts.sort((a, b) => b.no - a.no);
+
+            posts.forEach(p => {
                 const info = resultData.results[p.no] || { cat: 'chat', reason: '-' };
                 
                 const tr = document.createElement('tr');
