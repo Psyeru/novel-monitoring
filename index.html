@@ -77,17 +77,19 @@ const PROXY_URL = "https://my-cors-proxy.syeru1209.workers.dev/?url=";
 
 function log(msg) {
     const consoleBox = document.getElementById('debug-console');
+    if(!consoleBox) return;
     consoleBox.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
     consoleBox.scrollTop = consoleBox.scrollHeight;
 }
 
 function toggleInput() {
-    document.getElementById('startNo').disabled = document.getElementById('autoLatest').checked;
+    const autoLatest = document.getElementById('autoLatest');
+    const startNo = document.getElementById('startNo');
+    if(autoLatest && startNo) startNo.disabled = autoLatest.checked;
 }
 
-// 1. 최신 번호 추출 로직 (보강됨)
 async function getLatestNo() {
-    log("🔍 장갤 목록 분석 중...");
+    log("🔍 장갤 최신글 찾는 중...");
     try {
         const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
         const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
@@ -104,12 +106,11 @@ async function getLatestNo() {
     } catch(e) { log("❌ 번호 추출 실패"); return null; }
 }
 
-// 2. 메인 분석 함수 (에러 방지 강화)
 async function startMonitor() {
-    const key = document.getElementById('apiKey').value.trim();
-    const autoMode = document.getElementById('autoLatest').checked;
-    let startNo = parseInt(document.getElementById('startNo').value);
-    const totalCount = parseInt(document.getElementById('count').value);
+    const key = document.getElementById('apiKey')?.value.trim();
+    const autoMode = document.getElementById('autoLatest')?.checked;
+    let startNo = parseInt(document.getElementById('startNo')?.value);
+    const totalCount = parseInt(document.getElementById('count')?.value) || 20;
     
     const ui = {
         btn: document.getElementById('btnRun'),
@@ -120,11 +121,11 @@ async function startMonitor() {
     };
 
     if(!key) return alert("API 키를 입력하세요.");
-    ui.btn.disabled = true;
+    if(ui.btn) ui.btn.disabled = true;
     
     if(autoMode) {
         startNo = await getLatestNo();
-        if(!startNo) { ui.btn.disabled = false; return alert("최신글을 못 찾았습니다."); }
+        if(!startNo) { if(ui.btn) ui.btn.disabled = false; return alert("최신글을 못 찾았습니다."); }
     }
 
     let counts = { issue: 0, novel: 0, chat: 0 };
@@ -146,17 +147,20 @@ async function startMonitor() {
                     const doc = new DOMParser().parseFromString(html, 'text/html');
                     const title = doc.querySelector('.title_subject')?.innerText.trim();
                     const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 100) || "";
-                    if(title) return { no: String(no), title, body }; // 번호를 문자열로 고정
+                    if(title) return { no: String(no), title, body }; 
                 } catch(e) { return null; }
+                return null;
             });
 
-            const posts = (await Promise.all(fetchPromises)).filter(p => p !== null && p.no);
+            const posts = (await Promise.all(fetchPromises)).filter(p => p && p.no);
 
             if (posts.length > 0) {
-                const prompt = `Role: Novelpia Monitor. Classify DC Inside posts. 
-                1. 'issue': System bugs/billing/viewer complaints. 2. 'novel': Reviews/Recs. 3. 'chat': Others.
-                Output JSON Only: {"results": {"ID": {"c": "issue/novel/chat", "r": "Reason"}}}
-                Data: ${posts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body}`).join('\n')}`;
+                const prompt = `너는 노벨피아 모니터링 직원이야. 아래 글들을 분류해줘.
+                1. 'issue': 시스템 불만(뷰어, 결제, 렉, 운영).
+                2. 'novel': 소설 추천/리뷰.
+                3. 'chat': 기타 잡담.
+                JSON 형식으로만 답해: {"results": {"ID": {"c": "issue/novel/chat", "r": "이유"}}}
+                데이터: ${posts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body}`).join('\n')}`;
 
                 try {
                     const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
@@ -165,36 +169,36 @@ async function startMonitor() {
                     });
                     const aiData = await aiResp.json();
                     
-                    if(!aiData.candidates) throw new Error("AI 응답 없음");
+                    const rawText = aiData?.candidates?.[0]?.content?.parts?.[0]?.text?.replace(/```json|```/g, "").trim();
+                    if(!rawText) throw new Error("AI 응답 분석 불가");
                     
-                    const rawText = aiData.candidates[0].content.parts[0].text.replace(/```json|```/g, "").trim();
                     const resData = JSON.parse(rawText);
 
                     posts.forEach(p => {
-                        // 여기서 p.no가 확실히 있는지 체크
+                        // 안전장치 강화: p와 p.no가 존재할 때만 실행
                         if(!p || !p.no) return; 
 
-                        const result = (resData.results && (resData.results[p.no] || resData.results[String(p.no)])) || { c: 'chat', r: '-' };
+                        const result = resData?.results?.[p.no] || resData?.results?.[String(p.no)] || { c: 'chat', r: '-' };
                         const cat = ['issue', 'novel', 'chat'].includes(result.c) ? result.c : 'chat';
 
                         counts[cat]++;
                         const div = document.createElement('div');
                         div.className = 'item';
-                        div.innerHTML = `<span class="item-no">${p.no}</span><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a><span class="item-reason">${result.r}</span>`;
-                        ui.lists[cat].appendChild(div);
+                        div.innerHTML = `<span class="item-no">${p.no}</span><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${p.no}" target="_blank" class="item-link">${p.title}</a><span class="item-reason">${result.r || '-'}</span>`;
+                        if(ui.lists[cat]) ui.lists[cat].appendChild(div);
                     });
 
-                    ui.cnts.issue.innerText = counts.issue;
-                    ui.cnts.novel.innerText = counts.novel;
-                    ui.cnts.chat.innerText = counts.chat;
+                    if(ui.cnts.issue) ui.cnts.issue.innerText = counts.issue;
+                    if(ui.cnts.novel) ui.cnts.novel.innerText = counts.novel;
+                    if(ui.cnts.chat) ui.cnts.chat.innerText = counts.chat;
                 } catch(err) { log(`⚠️ 분석 스킵: ${err.message}`); }
             }
             processed += currentBatchSize;
-            ui.progBar.style.width = `${(processed/totalCount)*100}%`;
-            ui.progText.innerText = `${Math.round((processed/totalCount)*100)}%`;
+            if(ui.progBar) ui.progBar.style.width = `${(processed/totalCount)*100}%`;
+            if(ui.progText) ui.progText.innerText = `${Math.round((processed/totalCount)*100)}%`;
         }
-        log("✅ 모든 작업 완료");
-    } catch(e) { log(`❌ 치명적 에러: ${e.message}`); } finally { ui.btn.disabled = false; }
+        log("✅ 분석 완료");
+    } catch(e) { log(`❌ 치명적 에러: ${e.message}`); } finally { if(ui.btn) ui.btn.disabled = false; }
 }
 </script>
 </body>
