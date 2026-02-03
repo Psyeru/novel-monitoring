@@ -58,28 +58,41 @@ function log(msg) {
 
 // 1. 번호 추출 로직 (가장 번호가 큰 "진짜" 일반글 찾기)
 async function getLatestNo() {
-    log("🔍 최신글 번호 확인 중...");
+    log("🔍 공지 제외하고 진짜 최신글 찾는 중...");
     try {
         const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
         const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
         const html = await resp.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
         
-        const numElements = Array.from(doc.querySelectorAll('td.gall_num'));
-        let nums = numElements
-            .map(el => parseInt(el.innerText))
-            .filter(n => !isNaN(n) && n < 50000000); // 비정상 큰수 제외
+        // 1. 게시글 목록의 모든 행(tr)을 가져옵니다.
+        const rows = Array.from(doc.querySelectorAll('tr.ub-content.us-post'));
+        
+        for (let row of rows) {
+            const numCell = row.querySelector('.gall_num');
+            const targetCell = row.querySelector('.gall_tit a'); // 제목 링크도 확인
+            
+            if (!numCell) continue;
 
-        // 디시는 보통 공지번호가 작고 일반글이 큽니다. 가장 큰 놈이 최신글입니다.
-        const latest = Math.max(...nums);
-        if (latest > 0) {
-            log(`✅ 최신글 번호 감지: ${latest}`);
-            return latest;
+            // 2. [핵심] '공지'라는 글자가 들어있으면 무조건 패스합니다.
+            if (numCell.innerText.includes('공지') || numCell.innerHTML.includes('<b>')) {
+                continue; 
+            }
+
+            const no = parseInt(numCell.innerText.trim());
+            
+            // 3. 숫자가 맞고, 너무 터무니없는 숫자가 아니면 이게 진짜 최신 일반글입니다.
+            if (!isNaN(no) && no > 10000000) {
+                log(`✅ 공지 거르고 찾은 진짜 최신 번호: ${no}`);
+                return no;
+            }
         }
-        throw new Error("번호 찾기 실패");
-    } catch(e) { log("❌ 번호 추출 실패"); return null; }
+        throw new Error("일반글 번호를 찾지 못했습니다.");
+    } catch(e) { 
+        log("❌ 번호 추출 실패. 잠시 후 다시 시도하거나 수동 입력하세요."); 
+        return null; 
+    }
 }
-
 async function startMonitor() {
     const key = document.getElementById('apiKey').value.trim();
     const autoMode = document.getElementById('autoLatest').checked;
