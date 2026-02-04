@@ -2,23 +2,29 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>노벨피아 스마트 모니터 v4.2 - 필터링 & 최적화</title>
+    <title>노벨피아 스마트 모니터 v4.5 - Source DB</title>
     <style>
-        /* v4.1 원본 스타일 유지 */
         :root { --primary: #5a2df2; --bg: #f3f4f6; --surface: #ffffff; }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #1f2937; }
         .container { max-width: 850px; margin: 0 auto; }
 
         .control-box { background: var(--surface); padding: 25px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        /* v4.2 추가 UI: 필터 옵션 */
-        .filter-row { display: flex; gap: 15px; margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 10px; border: 1px solid #e9ecef; }
-        .chk-label { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; cursor: pointer; }
-        .chk-label input { width: 16px; height: 16px; accent-color: var(--primary); }
+        /* DB 관리 영역 스타일 */
+        .db-area { background: #2c3e50; padding: 15px; border-radius: 12px; margin-bottom: 20px; color: #ecf0f1; font-size: 13px; }
+        .db-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; color: #f1c40f; }
+        .db-code-box { width: 100%; height: 60px; background: #34495e; border: 1px solid #555; color: #00e676; font-family: monospace; padding: 10px; border-radius: 8px; resize: vertical; box-sizing: border-box; }
+        
+        .filter-row { display: flex; gap: 15px; margin-bottom: 15px; background: #f8f9fa; padding: 15px; border-radius: 12px; border: 1px solid #e9ecef; flex-wrap: wrap; align-items: center; }
+        .chk-label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; cursor: pointer; color: #333; }
+        .chk-label input { width: 18px; height: 18px; accent-color: var(--primary); }
+        .chk-label.red-point { color: #ef4444; }
 
-        .top-row { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .input-main { width: 100%; padding: 14px; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; }
+        .date-input { padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; cursor: pointer; }
+        
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .input-main { width: 100%; padding: 14px; border: 1px solid #e5e7eb; border-radius: 12px; margin-bottom: 15px; box-sizing: border-box; }
         .input-sub { flex: 1; padding: 14px; border: 1px solid #e5e7eb; border-radius: 12px; }
 
         button { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 800; cursor: pointer; transition: 0.2s; }
@@ -42,29 +48,44 @@
 <body>
 
 <div class="container">
-    <h2 style="text-align:center; margin-bottom: 20px;">⚡ 노벨피아 스마트 모니터 v4.2</h2>
+    <h2 style="text-align:center; margin-bottom: 20px;">⚡ 노벨피아 스마트 모니터 v4.5</h2>
 
     <div class="control-box">
         <input type="password" id="apiKey" class="input-main" placeholder="Gemini API Key를 입력하세요">
+
+        <div class="db-area">
+            <div class="db-header">
+                <span>💾 [소스 저장용] DB 코드 생성기</span>
+                <button onclick="generateSourceCode()" style="width:auto; padding: 5px 10px; font-size: 12px; background: #f1c40f; color: #333;">코드 생성</button>
+            </div>
+            <div>아래 코드를 복사해서, 소스 파일의 <b>const DATE_DB = { ... }</b> 부분을 덮어씌우면 영구 저장됩니다.</div>
+            <textarea id="dbSourceCode" class="db-code-box" readonly></textarea>
+        </div>
         
         <div class="filter-row">
-            <label class="chk-label"><input type="checkbox" id="checkIssueMode"> 🚨 이슈 집중 모드 (잡담 자동 스킵)</label>
-            <input type="date" id="targetDate" class="input-sub" style="padding: 8px; flex: 0.5;" disabled title="v4.3에서 기능 활성화 예정">
+            <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                <label style="font-weight: bold; font-size: 14px;">📅 날짜 이동:</label>
+                <input type="date" id="targetDate" class="date-input" onchange="handleDateChange(this.value)">
+                <span id="date-status" style="font-size: 12px; color: #666;"></span>
+            </div>
+            <label class="chk-label red-point">
+                <input type="checkbox" id="checkIssueMode"> 🚨 이슈 독점 모드
+            </label>
         </div>
 
         <div class="top-row">
             <label class="chk-label" style="color:var(--primary);">
-                <input type="checkbox" id="autoLatest" checked onchange="document.getElementById('startNo').disabled = this.checked"> 
-                <span>🔄 최신글 자동 감지</span>
+                <input type="checkbox" id="autoLatest" checked onchange="toggleAutoMode(this.checked)"> 
+                <span>🔄 최신글 자동 감지 (현재)</span>
             </label>
         </div>
 
         <div class="input-group">
-            <input type="number" id="startNo" class="input-sub" placeholder="시작 번호 (수동 입력 시 제한 없음)" disabled>
+            <input type="number" id="startNo" class="input-sub" placeholder="시작 번호 (날짜 선택 시 자동 입력)" disabled>
             <input type="number" id="count" class="input-sub" value="20" placeholder="분석 수량" style="flex:0.4;">
         </div>
         
-        <button id="btnRun" onclick="startMonitor()">🚀 v4.2 분석 가동</button>
+        <button id="btnRun" onclick="startMonitor()">🚀 분석 가동</button>
 
         <div class="prog-wrap">
             <div class="prog-container"><div class="prog-bar" id="progBar"></div></div>
@@ -77,22 +98,30 @@
 
     <div id="result-area">
         <details open><summary style="border-left: 5px solid #ef4444; color: #ef4444;">🚨 노피아 이슈 <span id="cnt-issue">0</span></summary><div id="list-issue"></div></details>
-        <details open><summary style="border-left: 5px solid #3b82f6; color: #3b82f6;">📖 소설 감상 <span id="cnt-novel">0</span></summary><div id="list-novel"></div></details>
-        <details><summary style="border-left: 5px solid #6b7280; color: #6b7280;">💬 일반 잡담 <span id="cnt-chat">0</span></summary><div id="list-chat"></div></details>
+        <details open id="det-novel"><summary style="border-left: 5px solid #3b82f6; color: #3b82f6;">📖 소설 감상 <span id="cnt-novel">0</span></summary><div id="list-novel"></div></details>
+        <details id="det-chat"><summary style="border-left: 5px solid #6b7280; color: #6b7280;">💬 일반 잡담 <span id="cnt-chat">0</span></summary><div id="list-chat"></div></details>
     </div>
 
-    <div id="debug-console">🖥️ [System] v4.2 Ready...</div>
+    <div id="debug-console">🖥️ [System] v4.5 Source DB Mode...</div>
 </div>
 
 <script>
     const PROXY_URL = "https://my-cors-proxy.syeru1209.workers.dev/?url=";
-    
-    // 🎯 v4.2 핵심: 필터링 키워드 정의
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 💾 [소스 저장소] 여기를 수정하면 어디서든 데이터가 유지됩니다.
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    let DATE_DB = {
+        "2026-02-01": 11730000, 
+        "2026-02-02": 11735000,
+        "2026-02-03": 11740000,
+        "2026-02-04": 11745000
+    };
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
     const KEYWORDS = {
-        // AI 분석 없이 바로 잡담 처리할 단어들
         BLACKLIST: ['주딱', '파딱', '완장', '점심', '출석', '출첵', 'ㅋㅋ', '콘', '야짤', '굿밤'],
-        // AI 분석 필수 단어들 (이슈 후보)
-        WHITELIST: ['결제', '오류', '버그', '렉', '환불', '운영', '공지', '뷰어', '업뎃', '차단']
+        WHITELIST: ['결제', '오류', '버그', '렉', '환불', '운영', '공지', '뷰어', '업뎃', '차단', '검열']
     };
 
     function log(msg) {
@@ -101,8 +130,58 @@
         consoleBox.scrollTop = consoleBox.scrollHeight;
     }
 
+    // [핵심] 현재 메모리에 있는 DB를 소스 코드 텍스트로 변환해주는 함수
+    function generateSourceCode() {
+        const jsonStr = JSON.stringify(DATE_DB, null, 4);
+        const code = `let DATE_DB = ${jsonStr};`;
+        document.getElementById('dbSourceCode').value = code;
+        alert("생성된 코드를 복사했습니다! \n소스 파일의 'let DATE_DB = ...' 부분을 이걸로 덮어쓰세요.");
+        document.getElementById('dbSourceCode').select();
+        document.execCommand('copy');
+    }
+
+    // 날짜 선택 시 DB 조회
+    function handleDateChange(dateStr) {
+        document.getElementById('autoLatest').checked = false;
+        document.getElementById('startNo').disabled = false;
+        
+        if (DATE_DB[dateStr]) {
+            document.getElementById('startNo').value = DATE_DB[dateStr];
+            document.getElementById('date-status').innerText = "✅ 소스 DB에서 불러옴";
+            document.getElementById('date-status').style.color = "green";
+            log(`[DB] ${dateStr} 로드 완료: ${DATE_DB[dateStr]}`);
+        } else {
+            document.getElementById('startNo').value = "";
+            document.getElementById('date-status').innerText = "⚠️ DB에 없음 (분석 후 코드 생성하세요)";
+            document.getElementById('date-status').style.color = "#e67e22";
+        }
+    }
+
+    function toggleAutoMode(isChecked) {
+        document.getElementById('startNo').disabled = isChecked;
+        if(isChecked) {
+            document.getElementById('targetDate').value = ""; 
+            document.getElementById('date-status').innerText = "";
+        }
+    }
+
+    // 분석 완료 후 DB 업데이트 (메모리 상에서만)
+    function updateInMemoryDB(startNo) {
+        const selectedDate = document.getElementById('targetDate').value;
+        if (!selectedDate) return; 
+        
+        // 해당 날짜 데이터가 없거나 갱신이 필요하면 업데이트
+        if (!DATE_DB[selectedDate]) {
+            DATE_DB[selectedDate] = startNo;
+            log(`[New] ${selectedDate} 인덱스(${startNo}) 확보!`);
+            log(`💡 '코드 생성' 버튼을 눌러 소스에 영구 저장하세요.`);
+            
+            // 시각적 알림
+            document.getElementById('dbSourceCode').value = "새로운 데이터가 추가되었습니다. '코드 생성' 버튼을 누르세요.";
+        }
+    }
+
     async function getLatestNo() {
-        log("최신글 번호 스캔 중...");
         try {
             const listUrl = `https://gall.dcinside.com/mgallery/board/lists/?id=genrenovel&page=1`;
             const resp = await fetch(PROXY_URL + encodeURIComponent(listUrl));
@@ -110,7 +189,6 @@
             const doc = new DOMParser().parseFromString(html, 'text/html');
             const rows = Array.from(doc.querySelectorAll('tr.ub-content.us-post'));
             
-            // v4.1 로직 유지 + 공지 낚시 방지
             let maxNo = 0;
             for (let row of rows) {
                 const numCell = row.querySelector('.gall_num');
@@ -118,15 +196,14 @@
                 const no = parseInt(numCell.innerText.trim());
                 if(!isNaN(no) && no > maxNo) maxNo = no;
             }
-            // v4.2 변경: 수동 검색을 위해 1100만 제한 코드 삭제함. 0보다 크면 OK.
             if(maxNo > 0) return maxNo;
-        } catch(e) { log("번호 감지 실패"); return null; }
+        } catch(e) { return null; }
     }
 
     async function startMonitor() {
         const key = document.getElementById('apiKey').value.trim();
         const autoMode = document.getElementById('autoLatest').checked;
-        const issueMode = document.getElementById('checkIssueMode').checked; // v4.2: 이슈 모드 확인
+        const issueMode = document.getElementById('checkIssueMode').checked;
         
         let startNo = parseInt(document.getElementById('startNo').value);
         const totalCount = parseInt(document.getElementById('count').value);
@@ -139,26 +216,34 @@
             progText: document.getElementById('progText'),
             status: document.getElementById('status-text')
         };
-        
         ui.btn.disabled = true;
 
         if(autoMode) {
             const latest = await getLatestNo();
             if(latest) { startNo = latest; log(`최신 번호 확보: ${startNo}`); }
-            else { ui.btn.disabled = false; return alert("최신글 번호를 못 찾았습니다."); }
+            else { ui.btn.disabled = false; return alert("번호 확보 실패"); }
+        } else {
+             if(!startNo) {
+                 alert("시작 번호를 입력하거나 최신글 자동 감지를 켜주세요.");
+                 ui.btn.disabled = false; return;
+            }
+            // 수동/날짜 모드 실행 시 메모리 DB 업데이트 시도
+            updateInMemoryDB(startNo);
         }
 
         let counts = { issue: 0, novel: 0, chat: 0 };
         const BATCH_SIZE = 10;
         let processed = 0;
 
+        document.getElementById('det-novel').style.display = issueMode ? 'none' : 'block';
+        document.getElementById('det-chat').style.display = issueMode ? 'none' : 'block';
+
         try {
             for (let i = 0; i < totalCount; i += BATCH_SIZE) {
                 const currentBatchSize = Math.min(BATCH_SIZE, totalCount - i);
                 const batchIds = Array.from({length: currentBatchSize}, (_, idx) => (startNo - i) - idx);
-                ui.status.innerText = `${batchIds[0]}번대 분석 중...`;
+                ui.status.innerText = `${batchIds[0]}번대 스캔 중...`;
 
-                // 1단계: 데이터 수집
                 const fetchPromises = batchIds.map(async (no) => {
                     try {
                         const targetUrl = `https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${no}`;
@@ -168,44 +253,36 @@
 
                         const doc = new DOMParser().parseFromString(html, 'text/html');
                         const title = doc.querySelector('.title_subject')?.innerText.trim();
-                        const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 150) || ""; // 본문 150자 제한
+                        const body = doc.querySelector('.write_div')?.innerText.trim().substring(0, 150) || "";
                         
                         if(title && !html.includes("삭제된 게시글")) return { no: String(no), title, body };
                     } catch(e) { return null; }
                 });
 
                 let posts = (await Promise.all(fetchPromises)).filter(p => p && p.no);
-
-                // 🎯 v4.2 핵심: 사전 필터링 (Pre-Filtering)
                 let aiTargetPosts = [];
                 
                 posts.forEach(p => {
-                    // 블랙리스트 체크 (제목 기준)
                     const isBlack = KEYWORDS.BLACKLIST.some(k => p.title.includes(k));
                     const isWhite = KEYWORDS.WHITELIST.some(k => p.title.includes(k));
 
                     if (isBlack && !isWhite) {
-                        // 블랙리스트면 바로 잡담 처리 (AI 안 씀 -> 속도 향상)
-                        if (!issueMode) { // 이슈 모드일 땐 잡담은 리스트에도 안 올림 (선택사항)
-                            appendItem(p, 'chat', '자동 필터됨 (키워드)');
+                        if (!issueMode) { 
+                            appendItem(p, 'chat', '자동 필터됨');
                             counts.chat++;
                         }
                     } else {
-                        // 화이트리스트거나 애매한 경우 AI에게 보냄
                         aiTargetPosts.push(p);
                     }
                 });
 
-                // AI 분석 단계 (걸러진 글들만)
                 if (aiTargetPosts.length > 0) {
-                    // 🎯 v4.2 핵심: 프롬프트 최적화 (현상 중심 요약)
-                    const prompt = `역할: 노벨피아 모니터링 요원.
+                    const prompt = `역할: 노벨피아 모니터링.
                     규칙:
-                    1. 'issue': 플랫폼 오류, 결제, 뷰어, 운영 이슈. (갤러리 완장/주딱 언급은 무조건 'chat')
-                    2. 'novel': 소설 추천/감상.
+                    1. 'issue': 플랫폼 오류, 결제, 운영 이슈. (단순 소설 감상/잡담 절대 아님)
+                    2. 'novel': 소설 리뷰.
                     3. 'chat': 잡담.
                     출력: JSON {"results": {"ID": {"c": "issue/novel/chat", "r": "요약(대상+행위, 20자이내)"}}}
-                    예시: {"c": "issue", "r": "결제 시스템 오류"}, {"c": "novel", "r": "신작 소설 리뷰"}
                     데이터:\n${aiTargetPosts.map(p => `ID:${p.no}|T:${p.title}|B:${p.body}`).join('\n')}`;
 
                     const aiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`, {
@@ -219,43 +296,32 @@
                         const resData = JSON.parse(rawText).results || JSON.parse(rawText);
                         aiTargetPosts.forEach(p => {
                             const res = (resData[p.no] || resData[String(p.no)]) || { c: 'chat', r: '분석 불가' };
-                            
-                            // 이슈 모드일 때 잡담은 스킵
-                            if(issueMode && res.c === 'chat') return;
-
+                            if(issueMode && res.c !== 'issue') return;
                             appendItem(p, res.c, res.r);
                             counts[res.c]++;
                         });
                     }
                 }
-                
                 processed += currentBatchSize;
                 const percent = Math.round((processed / totalCount) * 100);
                 ui.progBar.style.width = `${percent}%`;
                 ui.progText.innerText = `${percent}%`;
-                
                 updateCounts(counts);
             }
-            ui.status.innerText = "분석 완료";
-            log("✅ v4.2 작업 완료");
+            ui.status.innerText = "완료";
+            log("✅ 분석 완료");
         } catch(e) { log(`에러: ${e.message}`); } finally { ui.btn.disabled = false; }
     }
 
-    // 화면 출력 함수 분리 (코드 재사용)
     function appendItem(post, category, reason) {
         const listEl = document.getElementById(`list-${category}`);
-        if(!listEl) return;
-        
-        const div = document.createElement('div');
-        div.className = 'item';
-        div.innerHTML = `
-            <span class="item-no">${post.no}</span>
-            <a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${post.no}" target="_blank" class="item-link">${post.title}</a>
-            <span class="item-reason">${reason}</span>
-        `;
-        listEl.appendChild(div);
+        if(listEl) {
+            const div = document.createElement('div');
+            div.className = 'item';
+            div.innerHTML = `<span class="item-no">${post.no}</span><a href="https://gall.dcinside.com/mgallery/board/view/?id=genrenovel&no=${post.no}" target="_blank" class="item-link">${post.title}</a><span class="item-reason">${reason}</span>`;
+            listEl.appendChild(div);
+        }
     }
-
     function updateCounts(counts) {
         document.getElementById('cnt-issue').innerText = counts.issue;
         document.getElementById('cnt-novel').innerText = counts.novel;
